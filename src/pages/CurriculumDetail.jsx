@@ -6,6 +6,7 @@ import Modal from "../components/Modal";
 import CurriculumForm from "../components/CurriculumForm";
 import ProjectForm from "../components/ProjectForm";
 import ResourceForm from "../components/ResourceForm";
+import Notification from "../components/Notification";
 
 const CurriculumDetail = () => {
     const { id } = useParams();
@@ -18,10 +19,40 @@ const CurriculumDetail = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [showResourceModal, setShowResourceModal] = useState(false);
+    const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
+    const [showDeleteResourceModal, setShowDeleteResourceModal] =
+        useState(false);
+
+    const [projectToDelete, setProjectToDelete] = useState(null);
+    const [resourceToDelete, setResourceToDelete] = useState(null);
+
+    // Notification state
+    const [notification, setNotification] = useState({
+        isOpen: false,
+        type: "info",
+        title: "",
+        message: "",
+    });
 
     useEffect(() => {
         fetchCurriculum();
     }, [id]);
+
+    const showNotification = (type, title, message) => {
+        setNotification({
+            isOpen: true,
+            type,
+            title,
+            message,
+        });
+    };
+
+    const closeNotification = () => {
+        setNotification((prev) => ({
+            ...prev,
+            isOpen: false,
+        }));
+    };
 
     const fetchCurriculum = async () => {
         try {
@@ -38,6 +69,11 @@ const CurriculumDetail = () => {
     const handleEditSuccess = (updatedCurriculum) => {
         setCurriculum(updatedCurriculum);
         setShowEditModal(false);
+        showNotification(
+            "success",
+            "Success",
+            "Curriculum updated successfully!"
+        );
     };
 
     const handleProjectSuccess = (newProject) => {
@@ -46,6 +82,7 @@ const CurriculumDetail = () => {
             projects: [...(prev.projects || []), newProject],
         }));
         setShowProjectModal(false);
+        showNotification("success", "Success", "Project created successfully!");
     };
 
     const handleResourceSuccess = (newResource) => {
@@ -54,42 +91,81 @@ const CurriculumDetail = () => {
             resources: [...(prev.resources || []), newResource],
         }));
         setShowResourceModal(false);
+        showNotification("success", "Success", "Resource added successfully!");
     };
 
-    const handleDeleteProject = async (projectId) => {
-        if (
-            !window.confirm(
-                "Are you sure you want to delete this project? This will also delete all associated notes."
-            )
-        ) {
-            return;
-        }
+    const handleDeleteProjectClick = (project) => {
+        setProjectToDelete(project);
+        setShowDeleteProjectModal(true);
+    };
+
+    const handleDeleteProjectConfirm = async () => {
+        if (!projectToDelete) return;
 
         try {
-            await projectAPI.delete(projectId);
+            await projectAPI.delete(projectToDelete._id);
             setCurriculum((prev) => ({
                 ...prev,
-                projects: prev.projects.filter((p) => p._id !== projectId),
+                projects: prev.projects.filter(
+                    (p) => p._id !== projectToDelete._id
+                ),
             }));
+            setShowDeleteProjectModal(false);
+            setProjectToDelete(null);
+            showNotification(
+                "success",
+                "Success",
+                "Project deleted successfully!"
+            );
         } catch (error) {
-            alert("Failed to delete project: " + error.message);
+            showNotification(
+                "error",
+                "Error",
+                `Failed to delete project: ${error.message}`
+            );
         }
     };
 
-    const handleDeleteResource = async (resourceId) => {
-        if (!window.confirm("Are you sure you want to delete this resource?")) {
-            return;
-        }
+    const handleDeleteProjectCancel = () => {
+        setShowDeleteProjectModal(false);
+        setProjectToDelete(null);
+    };
+
+    const handleDeleteResourceClick = (resource) => {
+        setResourceToDelete(resource);
+        setShowDeleteResourceModal(true);
+    };
+
+    const handleDeleteResourceConfirm = async () => {
+        if (!resourceToDelete) return;
 
         try {
-            await curriculumAPI.deleteResource(resourceId);
+            await curriculumAPI.deleteResource(resourceToDelete._id);
             setCurriculum((prev) => ({
                 ...prev,
-                resources: prev.resources.filter((r) => r._id !== resourceId),
+                resources: prev.resources.filter(
+                    (r) => r._id !== resourceToDelete._id
+                ),
             }));
+            setShowDeleteResourceModal(false);
+            setResourceToDelete(null);
+            showNotification(
+                "success",
+                "Success",
+                "Resource deleted successfully!"
+            );
         } catch (error) {
-            alert("Failed to delete resource: " + error.message);
+            showNotification(
+                "error",
+                "Error",
+                `Failed to delete resource: ${error.message}`
+            );
         }
+    };
+
+    const handleDeleteResourceCancel = () => {
+        setShowDeleteResourceModal(false);
+        setResourceToDelete(null);
     };
 
     if (loading) {
@@ -188,7 +264,7 @@ const CurriculumDetail = () => {
                                     </div>
                                     <button
                                         onClick={() =>
-                                            handleDeleteResource(resource._id)
+                                            handleDeleteResourceClick(resource)
                                         }
                                         className="btn btn-danger btn-small"
                                     >
@@ -261,7 +337,9 @@ const CurriculumDetail = () => {
                                         </Link>
                                         <button
                                             onClick={() =>
-                                                handleDeleteProject(project._id)
+                                                handleDeleteProjectClick(
+                                                    project
+                                                )
                                             }
                                             className="btn btn-danger btn-small"
                                         >
@@ -279,7 +357,7 @@ const CurriculumDetail = () => {
                 </div>
             </div>
 
-            {/* Modals */}
+            {/* Edit Curriculum Modal */}
             <Modal
                 isOpen={showEditModal}
                 onClose={() => setShowEditModal(false)}
@@ -292,6 +370,7 @@ const CurriculumDetail = () => {
                 />
             </Modal>
 
+            {/* Create Project Modal */}
             <Modal
                 isOpen={showProjectModal}
                 onClose={() => setShowProjectModal(false)}
@@ -304,6 +383,7 @@ const CurriculumDetail = () => {
                 />
             </Modal>
 
+            {/* Add Resource Modal */}
             <Modal
                 isOpen={showResourceModal}
                 onClose={() => setShowResourceModal(false)}
@@ -315,6 +395,78 @@ const CurriculumDetail = () => {
                     onCancel={() => setShowResourceModal(false)}
                 />
             </Modal>
+
+            {/* Delete Project Confirmation Modal */}
+            <Modal
+                isOpen={showDeleteProjectModal}
+                onClose={handleDeleteProjectCancel}
+                title="Delete Project"
+            >
+                <div className="mb-1">
+                    <p className="text-error mb-1">
+                        ⚠️ Are you sure you want to delete "
+                        {projectToDelete?.name}"?
+                    </p>
+                    <p className="text-muted">
+                        This will permanently delete the project and all
+                        associated notes. This action cannot be undone.
+                    </p>
+                </div>
+
+                <div className="btn-group">
+                    <button
+                        onClick={handleDeleteProjectConfirm}
+                        className="btn btn-danger"
+                    >
+                        Delete Project
+                    </button>
+                    <button
+                        onClick={handleDeleteProjectCancel}
+                        className="btn btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </Modal>
+
+            {/* Delete Resource Confirmation Modal */}
+            <Modal
+                isOpen={showDeleteResourceModal}
+                onClose={handleDeleteResourceCancel}
+                title="Delete Resource"
+            >
+                <div className="mb-1">
+                    <p className="text-error mb-1">
+                        ⚠️ Are you sure you want to delete "
+                        {resourceToDelete?.name}"?
+                    </p>
+                    <p className="text-muted">This action cannot be undone.</p>
+                </div>
+
+                <div className="btn-group">
+                    <button
+                        onClick={handleDeleteResourceConfirm}
+                        className="btn btn-danger"
+                    >
+                        Delete Resource
+                    </button>
+                    <button
+                        onClick={handleDeleteResourceCancel}
+                        className="btn btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </Modal>
+
+            {/* Notification */}
+            <Notification
+                isOpen={notification.isOpen}
+                onClose={closeNotification}
+                type={notification.type}
+                title={notification.title}
+                message={notification.message}
+            />
         </div>
     );
 };

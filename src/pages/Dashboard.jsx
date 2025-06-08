@@ -4,22 +4,50 @@ import { curriculumAPI } from "../utils/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import CurriculumForm from "../components/CurriculumForm";
+import Notification from "../components/Notification";
 
 const Dashboard = () => {
     const [curricula, setCurricula] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [curriculumToDelete, setCurriculumToDelete] = useState(null);
+
+    // Notification state
+    const [notification, setNotification] = useState({
+        isOpen: false,
+        type: "info",
+        title: "",
+        message: "",
+    });
 
     useEffect(() => {
         fetchCurricula();
     }, []);
 
+    const showNotification = (type, title, message) => {
+        setNotification({
+            isOpen: true,
+            type,
+            title,
+            message,
+        });
+    };
+
+    const closeNotification = () => {
+        setNotification((prev) => ({
+            ...prev,
+            isOpen: false,
+        }));
+    };
+
     const fetchCurricula = async () => {
         try {
             setError("");
             const data = await curriculumAPI.getAll();
-            setCurricula(data.curriculua || []);
+            // Fix the typo: was data.curriculua, should be data.curricula
+            setCurricula(data.curricula || []);
         } catch (error) {
             setError(error.message);
         } finally {
@@ -30,23 +58,45 @@ const Dashboard = () => {
     const handleCreateSuccess = (newCurriculum) => {
         setCurricula((prev) => [...prev, newCurriculum]);
         setShowCreateModal(false);
+        showNotification(
+            "success",
+            "Success",
+            "Curriculum created successfully!"
+        );
     };
 
-    const handleDeleteCurriculum = async (curriculumId) => {
-        if (
-            !window.confirm(
-                "Are you sure you want to delete this curriculum? This will also delete all associated projects and notes."
-            )
-        ) {
-            return;
-        }
+    const handleDeleteClick = (curriculum) => {
+        setCurriculumToDelete(curriculum);
+        setShowDeleteModal(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!curriculumToDelete) return;
 
         try {
-            await curriculumAPI.delete(curriculumId);
-            setCurricula((prev) => prev.filter((c) => c._id !== curriculumId));
+            await curriculumAPI.delete(curriculumToDelete._id);
+            setCurricula((prev) =>
+                prev.filter((c) => c._id !== curriculumToDelete._id)
+            );
+            setShowDeleteModal(false);
+            setCurriculumToDelete(null);
+            showNotification(
+                "success",
+                "Success",
+                "Curriculum deleted successfully!"
+            );
         } catch (error) {
-            alert("Failed to delete curriculum: " + error.message);
+            showNotification(
+                "error",
+                "Error",
+                `Failed to delete curriculum: ${error.message}`
+            );
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setShowDeleteModal(false);
+        setCurriculumToDelete(null);
     };
 
     if (loading) {
@@ -137,7 +187,7 @@ const Dashboard = () => {
                                 </Link>
                                 <button
                                     onClick={() =>
-                                        handleDeleteCurriculum(curriculum._id)
+                                        handleDeleteClick(curriculum)
                                     }
                                     className="btn btn-danger btn-small"
                                 >
@@ -149,6 +199,7 @@ const Dashboard = () => {
                 </div>
             )}
 
+            {/* Create Curriculum Modal */}
             <Modal
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
@@ -159,6 +210,49 @@ const Dashboard = () => {
                     onCancel={() => setShowCreateModal(false)}
                 />
             </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <Modal
+                isOpen={showDeleteModal}
+                onClose={handleDeleteCancel}
+                title="Delete Curriculum"
+            >
+                <div className="mb-1">
+                    <p className="text-error mb-1">
+                        ⚠️ Are you sure you want to delete "
+                        {curriculumToDelete?.name}"?
+                    </p>
+                    <p className="text-muted">
+                        This will permanently delete the curriculum and all
+                        associated projects and notes. This action cannot be
+                        undone.
+                    </p>
+                </div>
+
+                <div className="btn-group">
+                    <button
+                        onClick={handleDeleteConfirm}
+                        className="btn btn-danger"
+                    >
+                        Delete Curriculum
+                    </button>
+                    <button
+                        onClick={handleDeleteCancel}
+                        className="btn btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </Modal>
+
+            {/* Notification */}
+            <Notification
+                isOpen={notification.isOpen}
+                onClose={closeNotification}
+                type={notification.type}
+                title={notification.title}
+                message={notification.message}
+            />
         </div>
     );
 };

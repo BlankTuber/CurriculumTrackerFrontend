@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { userAPI } from "../utils/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
+import Notification from "../components/Notification";
 
 const UserProfile = () => {
     const navigate = useNavigate();
@@ -31,9 +32,33 @@ const UserProfile = () => {
     const [deletePassword, setDeletePassword] = useState("");
     const [deleteError, setDeleteError] = useState("");
 
+    // Notification state
+    const [notification, setNotification] = useState({
+        isOpen: false,
+        type: "info",
+        title: "",
+        message: "",
+    });
+
     useEffect(() => {
         fetchUserProfile();
     }, []);
+
+    const showNotification = (type, title, message) => {
+        setNotification({
+            isOpen: true,
+            type,
+            title,
+            message,
+        });
+    };
+
+    const closeNotification = () => {
+        setNotification((prev) => ({
+            ...prev,
+            isOpen: false,
+        }));
+    };
 
     const fetchUserProfile = async () => {
         try {
@@ -117,6 +142,11 @@ const UserProfile = () => {
                     newPassword: "",
                     confirmPassword: "",
                 });
+                showNotification(
+                    "success",
+                    "Success",
+                    "Profile updated successfully!"
+                );
             } else {
                 setUpdateError(result.error);
             }
@@ -142,9 +172,18 @@ const UserProfile = () => {
             const result = await deleteAccount(deletePassword);
 
             if (result.success) {
-                alert("Account deleted successfully");
-                logout();
-                navigate("/login");
+                showNotification(
+                    "success",
+                    "Account Deleted",
+                    "Your account has been successfully deleted.",
+                    false
+                );
+                // Close modal and logout after a short delay
+                setShowDeleteModal(false);
+                setTimeout(() => {
+                    logout();
+                    navigate("/login");
+                }, 2000);
             } else {
                 setDeleteError(result.error);
             }
@@ -459,6 +498,19 @@ const UserProfile = () => {
                     </div>
                 </form>
             </Modal>
+
+            {/* Notification */}
+            <Notification
+                isOpen={notification.isOpen}
+                onClose={closeNotification}
+                type={notification.type}
+                title={notification.title}
+                message={notification.message}
+                autoClose={
+                    notification.type !== "success" ||
+                    notification.title !== "Account Deleted"
+                }
+            />
         </div>
     );
 };

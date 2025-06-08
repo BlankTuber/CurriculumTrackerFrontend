@@ -6,6 +6,7 @@ import Modal from "../components/Modal";
 import ProjectForm from "../components/ProjectForm";
 import ResourceForm from "../components/ResourceForm";
 import NoteForm from "../components/NoteForm";
+import Notification from "../components/Notification";
 
 const ProjectDetail = () => {
     const { id } = useParams();
@@ -18,10 +19,40 @@ const ProjectDetail = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showResourceModal, setShowResourceModal] = useState(false);
     const [showNoteModal, setShowNoteModal] = useState(false);
+    const [showDeleteResourceModal, setShowDeleteResourceModal] =
+        useState(false);
+    const [showDeleteNoteModal, setShowDeleteNoteModal] = useState(false);
+
+    const [resourceToDelete, setResourceToDelete] = useState(null);
+    const [noteToDelete, setNoteToDelete] = useState(null);
+
+    // Notification state
+    const [notification, setNotification] = useState({
+        isOpen: false,
+        type: "info",
+        title: "",
+        message: "",
+    });
 
     useEffect(() => {
         fetchProject();
     }, [id]);
+
+    const showNotification = (type, title, message) => {
+        setNotification({
+            isOpen: true,
+            type,
+            title,
+            message,
+        });
+    };
+
+    const closeNotification = () => {
+        setNotification((prev) => ({
+            ...prev,
+            isOpen: false,
+        }));
+    };
 
     const fetchProject = async () => {
         try {
@@ -38,6 +69,7 @@ const ProjectDetail = () => {
     const handleEditSuccess = (updatedProject) => {
         setProject(updatedProject);
         setShowEditModal(false);
+        showNotification("success", "Success", "Project updated successfully!");
     };
 
     const handleResourceSuccess = (newResource) => {
@@ -46,6 +78,7 @@ const ProjectDetail = () => {
             projectResources: [...(prev.projectResources || []), newResource],
         }));
         setShowResourceModal(false);
+        showNotification("success", "Success", "Resource added successfully!");
     };
 
     const handleNoteSuccess = (newNote) => {
@@ -54,40 +87,79 @@ const ProjectDetail = () => {
             notes: [...(prev.notes || []), newNote],
         }));
         setShowNoteModal(false);
+        showNotification("success", "Success", "Note added successfully!");
     };
 
-    const handleDeleteResource = async (resourceId) => {
-        if (!window.confirm("Are you sure you want to delete this resource?")) {
-            return;
-        }
+    const handleDeleteResourceClick = (resource) => {
+        setResourceToDelete(resource);
+        setShowDeleteResourceModal(true);
+    };
+
+    const handleDeleteResourceConfirm = async () => {
+        if (!resourceToDelete) return;
 
         try {
-            await projectAPI.deleteResource(resourceId);
+            await projectAPI.deleteResource(resourceToDelete._id);
             setProject((prev) => ({
                 ...prev,
                 projectResources: prev.projectResources.filter(
-                    (r) => r._id !== resourceId
+                    (r) => r._id !== resourceToDelete._id
                 ),
             }));
+            setShowDeleteResourceModal(false);
+            setResourceToDelete(null);
+            showNotification(
+                "success",
+                "Success",
+                "Resource deleted successfully!"
+            );
         } catch (error) {
-            alert("Failed to delete resource: " + error.message);
+            showNotification(
+                "error",
+                "Error",
+                `Failed to delete resource: ${error.message}`
+            );
         }
     };
 
-    const handleDeleteNote = async (noteId) => {
-        if (!window.confirm("Are you sure you want to delete this note?")) {
-            return;
-        }
+    const handleDeleteResourceCancel = () => {
+        setShowDeleteResourceModal(false);
+        setResourceToDelete(null);
+    };
+
+    const handleDeleteNoteClick = (note) => {
+        setNoteToDelete(note);
+        setShowDeleteNoteModal(true);
+    };
+
+    const handleDeleteNoteConfirm = async () => {
+        if (!noteToDelete) return;
 
         try {
-            await noteAPI.delete(noteId);
+            await noteAPI.delete(noteToDelete._id);
             setProject((prev) => ({
                 ...prev,
-                notes: prev.notes.filter((n) => n._id !== noteId),
+                notes: prev.notes.filter((n) => n._id !== noteToDelete._id),
             }));
+            setShowDeleteNoteModal(false);
+            setNoteToDelete(null);
+            showNotification(
+                "success",
+                "Success",
+                "Note deleted successfully!"
+            );
         } catch (error) {
-            alert("Failed to delete note: " + error.message);
+            showNotification(
+                "error",
+                "Error",
+                `Failed to delete note: ${error.message}`
+            );
         }
+    };
+
+    const handleDeleteNoteCancel = () => {
+        setShowDeleteNoteModal(false);
+        setNoteToDelete(null);
     };
 
     const formatDate = (dateString) => {
@@ -219,7 +291,7 @@ const ProjectDetail = () => {
                                     </div>
                                     <button
                                         onClick={() =>
-                                            handleDeleteResource(resource._id)
+                                            handleDeleteResourceClick(resource)
                                         }
                                         className="btn btn-danger btn-small"
                                     >
@@ -288,8 +360,8 @@ const ProjectDetail = () => {
                                                 </span>
                                                 <button
                                                     onClick={() =>
-                                                        handleDeleteNote(
-                                                            note._id
+                                                        handleDeleteNoteClick(
+                                                            note
                                                         )
                                                     }
                                                     className="btn btn-danger btn-small"
@@ -320,7 +392,7 @@ const ProjectDetail = () => {
                 </div>
             </div>
 
-            {/* Modals */}
+            {/* Edit Project Modal */}
             <Modal
                 isOpen={showEditModal}
                 onClose={() => setShowEditModal(false)}
@@ -334,6 +406,7 @@ const ProjectDetail = () => {
                 />
             </Modal>
 
+            {/* Add Resource Modal */}
             <Modal
                 isOpen={showResourceModal}
                 onClose={() => setShowResourceModal(false)}
@@ -346,6 +419,7 @@ const ProjectDetail = () => {
                 />
             </Modal>
 
+            {/* Add Note Modal */}
             <Modal
                 isOpen={showNoteModal}
                 onClose={() => setShowNoteModal(false)}
@@ -357,6 +431,91 @@ const ProjectDetail = () => {
                     onCancel={() => setShowNoteModal(false)}
                 />
             </Modal>
+
+            {/* Delete Resource Confirmation Modal */}
+            <Modal
+                isOpen={showDeleteResourceModal}
+                onClose={handleDeleteResourceCancel}
+                title="Delete Resource"
+            >
+                <div className="mb-1">
+                    <p className="text-error mb-1">
+                        ⚠️ Are you sure you want to delete "
+                        {resourceToDelete?.name}"?
+                    </p>
+                    <p className="text-muted">This action cannot be undone.</p>
+                </div>
+
+                <div className="btn-group">
+                    <button
+                        onClick={handleDeleteResourceConfirm}
+                        className="btn btn-danger"
+                    >
+                        Delete Resource
+                    </button>
+                    <button
+                        onClick={handleDeleteResourceCancel}
+                        className="btn btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </Modal>
+
+            {/* Delete Note Confirmation Modal */}
+            <Modal
+                isOpen={showDeleteNoteModal}
+                onClose={handleDeleteNoteCancel}
+                title="Delete Note"
+            >
+                <div className="mb-1">
+                    <p className="text-error mb-1">
+                        ⚠️ Are you sure you want to delete this note?
+                    </p>
+                    <p className="text-muted">This action cannot be undone.</p>
+                    <div
+                        className="card mt-1"
+                        style={{ background: "var(--bg-tertiary)" }}
+                    >
+                        <strong>
+                            {noteToDelete?.type?.charAt(0).toUpperCase() +
+                                noteToDelete?.type?.slice(1)}
+                        </strong>
+                        <p
+                            style={{
+                                margin: "0.5rem 0 0 0",
+                                whiteSpace: "pre-wrap",
+                            }}
+                        >
+                            {noteToDelete?.content}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="btn-group">
+                    <button
+                        onClick={handleDeleteNoteConfirm}
+                        className="btn btn-danger"
+                    >
+                        Delete Note
+                    </button>
+                    <button
+                        onClick={handleDeleteNoteCancel}
+                        className="btn btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </Modal>
+
+            {/* Notification */}
+            <Notification
+                isOpen={notification.isOpen}
+                onClose={closeNotification}
+                type={notification.type}
+                title={notification.title}
+                message={notification.message}
+            />
         </div>
     );
 };
