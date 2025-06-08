@@ -77,9 +77,17 @@ const CurriculumDetail = () => {
     };
 
     const handleProjectSuccess = (newProject) => {
+        // Ensure the new project has the curriculum information
+        const projectWithCurriculum = {
+            ...newProject,
+            curriculum: newProject.curriculum || {
+                _id: curriculum._id,
+                name: curriculum.name,
+            },
+        };
         setCurriculum((prev) => ({
             ...prev,
-            projects: [...(prev.projects || []), newProject],
+            projects: [...(prev.projects || []), projectWithCurriculum],
         }));
         setShowProjectModal(false);
         showNotification("success", "Success", "Project created successfully!");
@@ -92,6 +100,45 @@ const CurriculumDetail = () => {
         }));
         setShowResourceModal(false);
         showNotification("success", "Success", "Resource added successfully!");
+    };
+
+    const handleToggleProjectCompletion = async (project) => {
+        try {
+            const result = await projectAPI.update(project._id, {
+                completed: !project.completed,
+            });
+
+            setCurriculum((prev) => ({
+                ...prev,
+                projects: prev.projects.map((p) =>
+                    p._id === project._id
+                        ? {
+                              ...result.project,
+                              // Preserve any additional project data that might not be in the API response
+                              curriculum:
+                                  result.project.curriculum || p.curriculum,
+                              prerequisites:
+                                  result.project.prerequisites ||
+                                  p.prerequisites,
+                          }
+                        : p
+                ),
+            }));
+
+            showNotification(
+                "success",
+                "Success",
+                `Project "${project.name}" marked as ${
+                    result.project.completed ? "completed" : "incomplete"
+                }!`
+            );
+        } catch (error) {
+            showNotification(
+                "error",
+                "Error",
+                `Failed to update project: ${error.message}`
+            );
+        }
     };
 
     const handleDeleteProjectClick = (project) => {
@@ -168,6 +215,23 @@ const CurriculumDetail = () => {
         setResourceToDelete(null);
     };
 
+    const getProjectStats = () => {
+        if (!curriculum?.projects) return { total: 0, completed: 0 };
+        const total = curriculum.projects.length;
+        const completed = curriculum.projects.filter((p) => p.completed).length;
+        return { total, completed };
+    };
+
+    const sortedProjects = curriculum?.projects
+        ? [...curriculum.projects].sort((a, b) => {
+              // Sort by order if both have order, otherwise by creation date
+              if (a.order && b.order) return a.order - b.order;
+              if (a.order && !b.order) return -1;
+              if (!a.order && b.order) return 1;
+              return new Date(a.createdAt) - new Date(b.createdAt);
+          })
+        : [];
+
     if (loading) {
         return <LoadingSpinner message="Loading curriculum..." />;
     }
@@ -200,6 +264,8 @@ const CurriculumDetail = () => {
         );
     }
 
+    const { total, completed } = getProjectStats();
+
     return (
         <div>
             {/* Header */}
@@ -215,6 +281,25 @@ const CurriculumDetail = () => {
                     <h1>{curriculum.name}</h1>
                     {curriculum.description && (
                         <p className="text-muted">{curriculum.description}</p>
+                    )}
+                    {total > 0 && (
+                        <div
+                            className="flex"
+                            style={{ gap: "1rem", marginTop: "0.5rem" }}
+                        >
+                            <span className="text-muted">
+                                Progress: {completed}/{total} projects completed
+                            </span>
+                            <span
+                                className={
+                                    completed === total
+                                        ? "text-success"
+                                        : "text-warning"
+                                }
+                            >
+                                ({Math.round((completed / total) * 100)}%)
+                            </span>
+                        </div>
                     )}
                 </div>
                 <button
@@ -294,41 +379,125 @@ const CurriculumDetail = () => {
                         </div>
                     </div>
 
-                    {curriculum.projects && curriculum.projects.length > 0 ? (
+                    {sortedProjects.length > 0 ? (
                         <div className="list">
-                            {curriculum.projects.map((project) => (
-                                <div key={project._id} className="list-item">
-                                    <div style={{ flex: 1 }}>
-                                        <h4>
-                                            <Link
-                                                to={`/project/${project._id}`}
+                            {sortedProjects.map((project) => (
+                                <div
+                                    key={project._id}
+                                    className="list-item"
+                                    style={{
+                                        flexDirection: "column",
+                                        alignItems: "stretch",
+                                    }}
+                                >
+                                    <div className="flex-between mb-1">
+                                        <div style={{ flex: 1 }}>
+                                            <div
+                                                className="flex"
                                                 style={{
-                                                    textDecoration: "none",
-                                                    color: "inherit",
+                                                    alignItems: "center",
+                                                    gap: "0.5rem",
+                                                    marginBottom: "0.5rem",
                                                 }}
                                             >
-                                                {project.name}
-                                            </Link>
-                                        </h4>
-                                        <p
-                                            className="text-muted"
-                                            style={{ fontSize: "0.9rem" }}
-                                        >
-                                            {project.description}
-                                        </p>
-                                        {project.githubLink && (
-                                            <a
-                                                href={project.githubLink}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-primary"
-                                                style={{ fontSize: "0.8rem" }}
+                                                <h4>
+                                                    <Link
+                                                        to={`/project/${project._id}`}
+                                                        style={{
+                                                            textDecoration:
+                                                                "none",
+                                                            color: "inherit",
+                                                        }}
+                                                    >
+                                                        {project.name}
+                                                    </Link>
+                                                </h4>
+                                                {project.completed && (
+                                                    <span
+                                                        className="text-success"
+                                                        style={{
+                                                            fontSize: "1.2rem",
+                                                        }}
+                                                    >
+                                                        ✓
+                                                    </span>
+                                                )}
+                                                {project.order && (
+                                                    <span
+                                                        className="text-muted"
+                                                        style={{
+                                                            fontSize: "0.8rem",
+                                                        }}
+                                                    >
+                                                        #{project.order}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p
+                                                className="text-muted"
+                                                style={{
+                                                    fontSize: "0.9rem",
+                                                    margin: "0 0 0.5rem 0",
+                                                }}
                                             >
-                                                GitHub →
-                                            </a>
-                                        )}
+                                                {project.description}
+                                            </p>
+                                            <div
+                                                className="flex"
+                                                style={{
+                                                    gap: "1rem",
+                                                    alignItems: "center",
+                                                }}
+                                            >
+                                                <span
+                                                    className={
+                                                        project.completed
+                                                            ? "text-success"
+                                                            : "text-warning"
+                                                    }
+                                                    style={{
+                                                        fontSize: "0.8rem",
+                                                    }}
+                                                >
+                                                    {project.completed
+                                                        ? "Completed"
+                                                        : "In Progress"}
+                                                </span>
+                                                {project.githubLink && (
+                                                    <a
+                                                        href={
+                                                            project.githubLink
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-primary"
+                                                        style={{
+                                                            fontSize: "0.8rem",
+                                                        }}
+                                                    >
+                                                        GitHub →
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="btn-group">
+                                        <button
+                                            onClick={() =>
+                                                handleToggleProjectCompletion(
+                                                    project
+                                                )
+                                            }
+                                            className={`btn ${
+                                                project.completed
+                                                    ? "btn-warning"
+                                                    : "btn-success"
+                                            } btn-small`}
+                                        >
+                                            {project.completed
+                                                ? "Mark Incomplete"
+                                                : "Mark Complete"}
+                                        </button>
                                         <Link
                                             to={`/project/${project._id}`}
                                             className="btn btn-primary btn-small"

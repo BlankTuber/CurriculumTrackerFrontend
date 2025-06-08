@@ -13,8 +13,10 @@ const ProjectDetail = () => {
     const navigate = useNavigate();
 
     const [project, setProject] = useState(null);
+    const [originalCurriculum, setOriginalCurriculum] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [toggleLoading, setToggleLoading] = useState(false);
 
     const [showEditModal, setShowEditModal] = useState(false);
     const [showResourceModal, setShowResourceModal] = useState(false);
@@ -59,6 +61,8 @@ const ProjectDetail = () => {
             setError("");
             const data = await projectAPI.getById(id);
             setProject(data.project);
+            // Store the original curriculum info to preserve it during updates
+            setOriginalCurriculum(data.project.curriculum);
         } catch (error) {
             setError(error.message);
         } finally {
@@ -66,8 +70,45 @@ const ProjectDetail = () => {
         }
     };
 
+    const handleToggleCompletion = async () => {
+        if (!project) return;
+
+        setToggleLoading(true);
+        try {
+            const result = await projectAPI.update(project._id, {
+                completed: !project.completed,
+            });
+            // Always use the original curriculum info to prevent breadcrumb issues
+            const projectWithCurriculum = {
+                ...result.project,
+                curriculum: originalCurriculum,
+            };
+            setProject(projectWithCurriculum);
+            showNotification(
+                "success",
+                "Success",
+                `Project marked as ${
+                    result.project.completed ? "completed" : "incomplete"
+                }!`
+            );
+        } catch (error) {
+            showNotification(
+                "error",
+                "Error",
+                `Failed to update project: ${error.message}`
+            );
+        } finally {
+            setToggleLoading(false);
+        }
+    };
+
     const handleEditSuccess = (updatedProject) => {
-        setProject(updatedProject);
+        // Always use the original curriculum info to prevent breadcrumb issues
+        const projectWithCurriculum = {
+            ...updatedProject,
+            curriculum: originalCurriculum,
+        };
+        setProject(projectWithCurriculum);
         setShowEditModal(false);
         showNotification("success", "Success", "Project updated successfully!");
     };
@@ -224,32 +265,131 @@ const ProjectDetail = () => {
             <div className="flex-between mb-2">
                 <div>
                     <Link
-                        to={`/curriculum/${project.curriculum._id}`}
+                        to={`/curriculum/${
+                            originalCurriculum?._id || project.curriculum?._id
+                        }`}
                         className="text-muted"
                         style={{ textDecoration: "none" }}
                     >
-                        ← Back to {project.curriculum.name}
+                        ← Back to{" "}
+                        {originalCurriculum?.name || project.curriculum?.name}
                     </Link>
-                    <h1>{project.name}</h1>
+                    <div
+                        className="flex"
+                        style={{
+                            alignItems: "center",
+                            gap: "1rem",
+                            marginTop: "0.5rem",
+                        }}
+                    >
+                        <h1>{project.name}</h1>
+                        {project.completed && (
+                            <span
+                                className="text-success"
+                                style={{ fontSize: "1.5rem" }}
+                            >
+                                ✓
+                            </span>
+                        )}
+                    </div>
                     <p className="text-muted">{project.description}</p>
+                    <div
+                        className="flex"
+                        style={{ gap: "1rem", marginTop: "0.5rem" }}
+                    >
+                        {project.order && (
+                            <span className="text-muted">
+                                Order: {project.order}
+                            </span>
+                        )}
+                        <span
+                            className={
+                                project.completed
+                                    ? "text-success"
+                                    : "text-warning"
+                            }
+                        >
+                            Status:{" "}
+                            {project.completed ? "Completed" : "In Progress"}
+                        </span>
+                    </div>
                     {project.githubLink && (
                         <a
                             href={project.githubLink}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary"
+                            style={{ display: "block", marginTop: "0.5rem" }}
                         >
                             View on GitHub →
                         </a>
                     )}
                 </div>
-                <button
-                    onClick={() => setShowEditModal(true)}
-                    className="btn btn-secondary"
-                >
-                    Edit Project
-                </button>
+                <div className="btn-group">
+                    <button
+                        onClick={handleToggleCompletion}
+                        className={`btn ${
+                            project.completed ? "btn-warning" : "btn-success"
+                        } btn-small`}
+                        disabled={toggleLoading}
+                    >
+                        {toggleLoading
+                            ? "Updating..."
+                            : project.completed
+                            ? "Mark Incomplete"
+                            : "Mark Complete"}
+                    </button>
+                    <button
+                        onClick={() => setShowEditModal(true)}
+                        className="btn btn-secondary btn-small"
+                    >
+                        Edit Project
+                    </button>
+                </div>
             </div>
+
+            {/* Prerequisites Section */}
+            {project.prerequisites && project.prerequisites.length > 0 && (
+                <div className="card mb-2">
+                    <div className="card-header">
+                        <h2 className="card-title">Prerequisites</h2>
+                    </div>
+                    <div className="list">
+                        {project.prerequisites.map((prerequisite) => (
+                            <div key={prerequisite._id} className="list-item">
+                                <div style={{ flex: 1 }}>
+                                    <h4>{prerequisite.name}</h4>
+                                    <p
+                                        className="text-muted"
+                                        style={{ fontSize: "0.9rem" }}
+                                    >
+                                        {prerequisite.description}
+                                    </p>
+                                </div>
+                                <div
+                                    className="flex"
+                                    style={{
+                                        alignItems: "center",
+                                        gap: "0.5rem",
+                                    }}
+                                >
+                                    <span
+                                        className={
+                                            prerequisite.completed
+                                                ? "text-success"
+                                                : "text-warning"
+                                        }
+                                    >
+                                        {prerequisite.completed
+                                            ? "✓ Completed"
+                                            : "In Progress"}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-2">
                 {/* Resources Section */}
@@ -400,7 +540,9 @@ const ProjectDetail = () => {
             >
                 <ProjectForm
                     project={project}
-                    curriculumId={project.curriculum._id}
+                    curriculumId={
+                        originalCurriculum?._id || project.curriculum?._id
+                    }
                     onSuccess={handleEditSuccess}
                     onCancel={() => setShowEditModal(false)}
                 />

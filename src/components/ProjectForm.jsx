@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { projectAPI } from "../utils/api";
 
 const RESOURCE_TYPES = [
@@ -19,6 +19,9 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         name: project?.name || "",
         description: project?.description || "",
         githubLink: project?.githubLink || "",
+        completed: project?.completed || false,
+        order: project?.order || "",
+        prerequisites: project?.prerequisites?.map((p) => p._id) || [],
     });
 
     const [projectResources, setProjectResources] = useState(
@@ -27,14 +30,43 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         ]
     );
 
+    const [availableProjects, setAvailableProjects] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    useEffect(() => {
+        fetchAvailableProjects();
+    }, []);
+
+    const fetchAvailableProjects = async () => {
+        try {
+            const data = await projectAPI.getAll();
+            // Filter out current project if editing and only show projects from same curriculum
+            const filtered = data.projects.filter(
+                (p) =>
+                    p._id !== project?._id && p.curriculum._id === curriculumId
+            );
+            setAvailableProjects(filtered);
+        } catch (error) {
+            console.error("Failed to fetch projects:", error);
+        }
+    };
+
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setFormData((prev) => ({
             ...prev,
-            [name]: value,
+            [name]: type === "checkbox" ? checked : value,
+        }));
+    };
+
+    const handlePrerequisiteChange = (e) => {
+        const { value, checked } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            prerequisites: checked
+                ? [...prev.prerequisites, value]
+                : prev.prerequisites.filter((id) => id !== value),
         }));
     };
 
@@ -90,6 +122,11 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
             return false;
         }
 
+        if (formData.order && (isNaN(formData.order) || formData.order < 1)) {
+            setError("Order must be a positive number");
+            return false;
+        }
+
         // Validate project resources
         for (let i = 0; i < projectResources.length; i++) {
             const resource = projectResources[i];
@@ -141,6 +178,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
 
             const submitData = {
                 ...formData,
+                order: formData.order ? parseInt(formData.order) : undefined,
                 projectResources: validResources,
             };
 
@@ -214,6 +252,92 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                     placeholder="https://github.com/username/repository"
                 />
             </div>
+
+            <div className="grid grid-2">
+                <div className="form-group">
+                    <label className="form-label" htmlFor="order">
+                        Order (optional)
+                    </label>
+                    <input
+                        type="number"
+                        id="order"
+                        name="order"
+                        value={formData.order}
+                        onChange={handleChange}
+                        className="form-input"
+                        min="1"
+                        disabled={loading}
+                        placeholder="Project order"
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label">
+                        <input
+                            type="checkbox"
+                            name="completed"
+                            checked={formData.completed}
+                            onChange={handleChange}
+                            disabled={loading}
+                            style={{ marginRight: "0.5rem" }}
+                        />
+                        Mark as completed
+                    </label>
+                </div>
+            </div>
+
+            {availableProjects.length > 0 && (
+                <div className="form-group">
+                    <label className="form-label">Prerequisites</label>
+                    <div
+                        style={{
+                            maxHeight: "150px",
+                            overflowY: "auto",
+                            border: "1px solid var(--border-color)",
+                            borderRadius: "6px",
+                            padding: "0.5rem",
+                        }}
+                    >
+                        {availableProjects.map((availableProject) => (
+                            <div
+                                key={availableProject._id}
+                                style={{ marginBottom: "0.5rem" }}
+                            >
+                                <label
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        value={availableProject._id}
+                                        checked={formData.prerequisites.includes(
+                                            availableProject._id
+                                        )}
+                                        onChange={handlePrerequisiteChange}
+                                        disabled={loading}
+                                        style={{ marginRight: "0.5rem" }}
+                                    />
+                                    <span>{availableProject.name}</span>
+                                    {availableProject.completed && (
+                                        <span
+                                            className="text-success"
+                                            style={{
+                                                marginLeft: "0.5rem",
+                                                fontSize: "0.8rem",
+                                            }}
+                                        >
+                                            ✓ Completed
+                                        </span>
+                                    )}
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="form-group">
                 <div className="flex-between mb-1">
