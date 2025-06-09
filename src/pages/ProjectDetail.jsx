@@ -1,3 +1,16 @@
+const handlePrerequisiteSuccess = (updatedProject) => {
+    const projectWithCurriculum = {
+        ...updatedProject,
+        curriculum: originalCurriculum,
+    };
+    setProject(projectWithCurriculum);
+    setShowPrerequisiteModal(false);
+    showNotification(
+        "success",
+        "Success",
+        "Prerequisites updated successfully!"
+    );
+};
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { projectAPI, noteAPI } from "../utils/api";
@@ -6,6 +19,7 @@ import Modal from "../components/Modal";
 import ProjectForm from "../components/ProjectForm";
 import ResourceForm from "../components/ResourceForm";
 import NoteForm from "../components/NoteForm";
+import PrerequisiteManager from "../components/PrerequisiteManager";
 import Notification from "../components/Notification";
 
 const ProjectDetail = () => {
@@ -21,6 +35,7 @@ const ProjectDetail = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showResourceModal, setShowResourceModal] = useState(false);
     const [showNoteModal, setShowNoteModal] = useState(false);
+    const [showPrerequisiteModal, setShowPrerequisiteModal] = useState(false);
     const [showDeleteResourceModal, setShowDeleteResourceModal] =
         useState(false);
     const [showDeleteNoteModal, setShowDeleteNoteModal] = useState(false);
@@ -28,7 +43,6 @@ const ProjectDetail = () => {
     const [resourceToDelete, setResourceToDelete] = useState(null);
     const [noteToDelete, setNoteToDelete] = useState(null);
 
-    // Notification state
     const [notification, setNotification] = useState({
         isOpen: false,
         type: "info",
@@ -61,7 +75,6 @@ const ProjectDetail = () => {
             setError("");
             const data = await projectAPI.getById(id);
             setProject(data.project);
-            // Store the original curriculum info to preserve it during updates
             setOriginalCurriculum(data.project.curriculum);
         } catch (error) {
             setError(error.message);
@@ -78,7 +91,6 @@ const ProjectDetail = () => {
             const result = await projectAPI.update(project._id, {
                 completed: !project.completed,
             });
-            // Always use the original curriculum info to prevent breadcrumb issues
             const projectWithCurriculum = {
                 ...result.project,
                 curriculum: originalCurriculum,
@@ -103,7 +115,6 @@ const ProjectDetail = () => {
     };
 
     const handleEditSuccess = (updatedProject) => {
-        // Always use the original curriculum info to prevent breadcrumb issues
         const projectWithCurriculum = {
             ...updatedProject,
             curriculum: originalCurriculum,
@@ -129,6 +140,20 @@ const ProjectDetail = () => {
         }));
         setShowNoteModal(false);
         showNotification("success", "Success", "Note added successfully!");
+    };
+
+    const handlePrerequisiteSuccess = (updatedProject) => {
+        const projectWithCurriculum = {
+            ...updatedProject,
+            curriculum: originalCurriculum,
+        };
+        setProject(projectWithCurriculum);
+        setShowPrerequisiteModal(false);
+        showNotification(
+            "success",
+            "Success",
+            "Prerequisites updated successfully!"
+        );
     };
 
     const handleDeleteResourceClick = (resource) => {
@@ -227,6 +252,13 @@ const ProjectDetail = () => {
         return colors[type] || "text-muted";
     };
 
+    const getLevelForStage = (stage) => {
+        if (!originalCurriculum?.levels) return null;
+        return originalCurriculum.levels.find(
+            (level) => stage >= level.stageStart && stage <= level.stageEnd
+        );
+    };
+
     if (loading) {
         return <LoadingSpinner message="Loading project..." />;
     }
@@ -259,9 +291,10 @@ const ProjectDetail = () => {
         );
     }
 
+    const projectLevel = getLevelForStage(project.stage);
+
     return (
         <div>
-            {/* Header */}
             <div className="flex-between mb-2">
                 <div>
                     <Link
@@ -295,11 +328,19 @@ const ProjectDetail = () => {
                     <p className="text-muted">{project.description}</p>
                     <div
                         className="flex"
-                        style={{ gap: "1rem", marginTop: "0.5rem" }}
+                        style={{
+                            gap: "1rem",
+                            marginTop: "0.5rem",
+                            flexWrap: "wrap",
+                        }}
                     >
-                        {project.order && (
-                            <span className="text-muted">
-                                Order: {project.order}
+                        <span className="text-muted">
+                            Stage {project.stage}
+                            {project.order && ` #${project.order}`}
+                        </span>
+                        {projectLevel && (
+                            <span className="text-primary">
+                                Level: {projectLevel.name}
                             </span>
                         )}
                         <span
@@ -348,11 +389,18 @@ const ProjectDetail = () => {
                 </div>
             </div>
 
-            {/* Prerequisites Section */}
             {project.prerequisites && project.prerequisites.length > 0 && (
                 <div className="card mb-2">
                     <div className="card-header">
-                        <h2 className="card-title">Prerequisites</h2>
+                        <div className="flex-between">
+                            <h2 className="card-title">Prerequisites</h2>
+                            <button
+                                onClick={() => setShowPrerequisiteModal(true)}
+                                className="btn btn-secondary btn-small"
+                            >
+                                Manage Prerequisites
+                            </button>
+                        </div>
                     </div>
                     <div className="list">
                         {project.prerequisites.map((prerequisite) => (
@@ -365,25 +413,31 @@ const ProjectDetail = () => {
                                     >
                                         {prerequisite.description}
                                     </p>
-                                </div>
-                                <div
-                                    className="flex"
-                                    style={{
-                                        alignItems: "center",
-                                        gap: "0.5rem",
-                                    }}
-                                >
-                                    <span
-                                        className={
-                                            prerequisite.completed
-                                                ? "text-success"
-                                                : "text-warning"
-                                        }
+                                    <div
+                                        className="flex"
+                                        style={{
+                                            gap: "1rem",
+                                            alignItems: "center",
+                                        }}
                                     >
-                                        {prerequisite.completed
-                                            ? "✓ Completed"
-                                            : "In Progress"}
-                                    </span>
+                                        <span
+                                            className="text-muted"
+                                            style={{ fontSize: "0.8rem" }}
+                                        >
+                                            Stage {prerequisite.stage}
+                                        </span>
+                                        <span
+                                            className={
+                                                prerequisite.completed
+                                                    ? "text-success"
+                                                    : "text-warning"
+                                            }
+                                        >
+                                            {prerequisite.completed
+                                                ? "✓ Completed"
+                                                : "In Progress"}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -391,8 +445,26 @@ const ProjectDetail = () => {
                 </div>
             )}
 
+            {(!project.prerequisites || project.prerequisites.length === 0) && (
+                <div className="card mb-2">
+                    <div className="card-header">
+                        <div className="flex-between">
+                            <h2 className="card-title">Prerequisites</h2>
+                            <button
+                                onClick={() => setShowPrerequisiteModal(true)}
+                                className="btn btn-primary btn-small"
+                            >
+                                Add Prerequisites
+                            </button>
+                        </div>
+                    </div>
+                    <p className="text-muted text-center">
+                        No prerequisites set for this project
+                    </p>
+                </div>
+            )}
+
             <div className="grid grid-2">
-                {/* Resources Section */}
                 <div className="card">
                     <div className="card-header">
                         <div className="flex-between">
@@ -447,7 +519,6 @@ const ProjectDetail = () => {
                     )}
                 </div>
 
-                {/* Notes Section */}
                 <div className="card">
                     <div className="card-header">
                         <div className="flex-between">
@@ -532,7 +603,18 @@ const ProjectDetail = () => {
                 </div>
             </div>
 
-            {/* Edit Project Modal */}
+            <Modal
+                isOpen={showPrerequisiteModal}
+                onClose={() => setShowPrerequisiteModal(false)}
+                title="Manage Prerequisites"
+            >
+                <PrerequisiteManager
+                    project={project}
+                    onSuccess={handlePrerequisiteSuccess}
+                    onCancel={() => setShowPrerequisiteModal(false)}
+                />
+            </Modal>
+
             <Modal
                 isOpen={showEditModal}
                 onClose={() => setShowEditModal(false)}
@@ -548,7 +630,6 @@ const ProjectDetail = () => {
                 />
             </Modal>
 
-            {/* Add Resource Modal */}
             <Modal
                 isOpen={showResourceModal}
                 onClose={() => setShowResourceModal(false)}
@@ -561,7 +642,6 @@ const ProjectDetail = () => {
                 />
             </Modal>
 
-            {/* Add Note Modal */}
             <Modal
                 isOpen={showNoteModal}
                 onClose={() => setShowNoteModal(false)}
@@ -574,7 +654,6 @@ const ProjectDetail = () => {
                 />
             </Modal>
 
-            {/* Delete Resource Confirmation Modal */}
             <Modal
                 isOpen={showDeleteResourceModal}
                 onClose={handleDeleteResourceCancel}
@@ -604,7 +683,6 @@ const ProjectDetail = () => {
                 </div>
             </Modal>
 
-            {/* Delete Note Confirmation Modal */}
             <Modal
                 isOpen={showDeleteNoteModal}
                 onClose={handleDeleteNoteCancel}
@@ -650,7 +728,6 @@ const ProjectDetail = () => {
                 </div>
             </Modal>
 
-            {/* Notification */}
             <Notification
                 isOpen={notification.isOpen}
                 onClose={closeNotification}

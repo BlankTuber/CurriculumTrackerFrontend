@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { curriculumAPI } from "../utils/api";
+import {
+    getLevelForStage,
+    sortProjectsByStageAndOrder,
+    getProjectStats,
+    getNextIncompleteProject,
+} from "../utils/stageUtils";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import CurriculumForm from "../components/CurriculumForm";
@@ -14,7 +20,6 @@ const Dashboard = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [curriculumToDelete, setCurriculumToDelete] = useState(null);
 
-    // Notification state
     const [notification, setNotification] = useState({
         isOpen: false,
         type: "info",
@@ -99,15 +104,7 @@ const Dashboard = () => {
     };
 
     const getCurriculumProgress = (curriculum) => {
-        if (!curriculum.projects || curriculum.projects.length === 0) {
-            return { total: 0, completed: 0, percentage: 0 };
-        }
-
-        const total = curriculum.projects.length;
-        const completed = curriculum.projects.filter((p) => p.completed).length;
-        const percentage = Math.round((completed / total) * 100);
-
-        return { total, completed, percentage };
+        return getProjectStats(curriculum.projects || []);
     };
 
     const getOverallStats = () => {
@@ -125,12 +122,17 @@ const Dashboard = () => {
             (sum, curr) => sum + (curr.resources?.length || 0),
             0
         );
+        const totalLevels = curricula.reduce(
+            (sum, curr) => sum + (curr.levels?.length || 0),
+            0
+        );
 
         return {
             totalCurricula,
             totalProjects,
             completedProjects,
             totalResources,
+            totalLevels,
             overallProgress:
                 totalProjects > 0
                     ? Math.round((completedProjects / totalProjects) * 100)
@@ -163,7 +165,6 @@ const Dashboard = () => {
 
             {error && <div className="error-message mb-2">{error}</div>}
 
-            {/* Overall Statistics */}
             {curricula.length > 0 && (
                 <div className="card mb-2">
                     <h2 className="card-title">Overview</h2>
@@ -175,6 +176,14 @@ const Dashboard = () => {
                                 </span>
                                 <span className="text-primary">
                                     {stats.totalCurricula}
+                                </span>
+                            </div>
+                            <div className="flex-between mb-1">
+                                <span className="text-muted">
+                                    Total Levels:
+                                </span>
+                                <span className="text-primary">
+                                    {stats.totalLevels}
                                 </span>
                             </div>
                             <div className="flex-between mb-1">
@@ -260,18 +269,9 @@ const Dashboard = () => {
                 <div className="grid grid-2">
                     {curricula.map((curriculum) => {
                         const progress = getCurriculumProgress(curriculum);
-                        const sortedProjects = curriculum.projects
-                            ? [...curriculum.projects].sort((a, b) => {
-                                  if (a.order && b.order)
-                                      return a.order - b.order;
-                                  if (a.order && !b.order) return -1;
-                                  if (!a.order && b.order) return 1;
-                                  return (
-                                      new Date(a.createdAt) -
-                                      new Date(b.createdAt)
-                                  );
-                              })
-                            : [];
+                        const sortedProjects = sortProjectsByStageAndOrder(
+                            curriculum.projects || []
+                        );
 
                         return (
                             <div key={curriculum._id} className="card">
@@ -295,6 +295,14 @@ const Dashboard = () => {
                                 </div>
 
                                 <div className="mb-1">
+                                    <div className="flex-between">
+                                        <span className="text-muted">
+                                            Levels:
+                                        </span>
+                                        <span>
+                                            {curriculum.levels?.length || 0}
+                                        </span>
+                                    </div>
                                     <div className="flex-between">
                                         <span className="text-muted">
                                             Resources:
@@ -363,7 +371,6 @@ const Dashboard = () => {
                                     )}
                                 </div>
 
-                                {/* Show next incomplete project */}
                                 {progress.total > 0 &&
                                     progress.completed < progress.total && (
                                         <div className="mb-1">
@@ -378,8 +385,9 @@ const Dashboard = () => {
                                             </p>
                                             {(() => {
                                                 const nextProject =
-                                                    sortedProjects.find(
-                                                        (p) => !p.completed
+                                                    getNextIncompleteProject(
+                                                        curriculum.projects ||
+                                                            []
                                                     );
                                                 return nextProject ? (
                                                     <div
@@ -391,23 +399,45 @@ const Dashboard = () => {
                                                             fontSize: "0.9rem",
                                                         }}
                                                     >
-                                                        <strong>
-                                                            {nextProject.name}
-                                                        </strong>
-                                                        {nextProject.order && (
-                                                            <span
-                                                                className="text-muted"
+                                                        <div className="flex-between">
+                                                            <strong>
+                                                                {
+                                                                    nextProject.name
+                                                                }
+                                                            </strong>
+                                                            <div
+                                                                className="flex"
                                                                 style={{
-                                                                    marginLeft:
-                                                                        "0.5rem",
+                                                                    gap: "0.5rem",
+                                                                    fontSize:
+                                                                        "0.8rem",
                                                                 }}
                                                             >
-                                                                #
-                                                                {
-                                                                    nextProject.order
-                                                                }
-                                                            </span>
-                                                        )}
+                                                                <span className="text-muted">
+                                                                    Stage{" "}
+                                                                    {
+                                                                        nextProject.stage
+                                                                    }
+                                                                    {nextProject.order &&
+                                                                        ` #${nextProject.order}`}
+                                                                </span>
+                                                                {(() => {
+                                                                    const level =
+                                                                        getLevelForStage(
+                                                                            curriculum.levels ||
+                                                                                [],
+                                                                            nextProject.stage
+                                                                        );
+                                                                    return level ? (
+                                                                        <span className="text-primary">
+                                                                            {
+                                                                                level.name
+                                                                            }
+                                                                        </span>
+                                                                    ) : null;
+                                                                })()}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 ) : null;
                                             })()}
@@ -436,7 +466,6 @@ const Dashboard = () => {
                 </div>
             )}
 
-            {/* Create Curriculum Modal */}
             <Modal
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
@@ -448,7 +477,6 @@ const Dashboard = () => {
                 />
             </Modal>
 
-            {/* Delete Confirmation Modal */}
             <Modal
                 isOpen={showDeleteModal}
                 onClose={handleDeleteCancel}
@@ -482,7 +510,6 @@ const Dashboard = () => {
                 </div>
             </Modal>
 
-            {/* Notification */}
             <Notification
                 isOpen={notification.isOpen}
                 onClose={closeNotification}

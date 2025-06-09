@@ -1,10 +1,9 @@
 const API_BASE_URL = "http://localhost:3000/api";
 
-// Helper function to make API requests
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
     const config = {
-        credentials: "include", // Include cookies for session auth
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             ...options.headers,
@@ -26,7 +25,6 @@ const apiRequest = async (endpoint, options = {}) => {
     }
 };
 
-// User API functions
 export const userAPI = {
     register: (userData) =>
         apiRequest("/user/register", {
@@ -55,7 +53,6 @@ export const userAPI = {
         }),
 };
 
-// Curriculum API functions
 export const curriculumAPI = {
     create: (curriculumData) =>
         apiRequest("/curricula/createCurriculum", {
@@ -78,7 +75,6 @@ export const curriculumAPI = {
             method: "DELETE",
         }),
 
-    // Resource functions
     createResource: (curriculumId, resourceData) =>
         apiRequest(`/curricula/resource/${curriculumId}/createResource`, {
             method: "POST",
@@ -100,7 +96,27 @@ export const curriculumAPI = {
         }),
 };
 
-// Project API functions
+export const levelAPI = {
+    create: (curriculumId, levelData) =>
+        apiRequest(`/curricula/level/${curriculumId}/createLevel`, {
+            method: "POST",
+            body: JSON.stringify(levelData),
+        }),
+
+    getById: (levelId) => apiRequest(`/curricula/level/${levelId}`),
+
+    update: (levelId, levelData) =>
+        apiRequest(`/curricula/level/${levelId}/updateLevel`, {
+            method: "PUT",
+            body: JSON.stringify(levelData),
+        }),
+
+    delete: (levelId) =>
+        apiRequest(`/curricula/level/${levelId}/deleteLevel`, {
+            method: "DELETE",
+        }),
+};
+
 export const projectAPI = {
     create: (curriculumId, projectData) =>
         apiRequest(`/projects/${curriculumId}/createProject`, {
@@ -111,6 +127,19 @@ export const projectAPI = {
     getAll: () => apiRequest("/projects"),
 
     getById: (id) => apiRequest(`/projects/${id}`),
+
+    getByCurriculumStage: (curriculumId, params = {}) => {
+        const queryParams = new URLSearchParams();
+        if (params.stage) queryParams.append("stage", params.stage);
+        if (params.level) queryParams.append("level", params.level);
+
+        const queryString = queryParams.toString();
+        const endpoint = `/projects/curriculum/${curriculumId}/stage${
+            queryString ? `?${queryString}` : ""
+        }`;
+
+        return apiRequest(endpoint);
+    },
 
     update: (id, data) =>
         apiRequest(`/projects/${id}/updateProject`, {
@@ -123,7 +152,6 @@ export const projectAPI = {
             method: "DELETE",
         }),
 
-    // Project Resource functions
     createResource: (projectId, resourceData) =>
         apiRequest(`/projects/resource/${projectId}/createProjectResource`, {
             method: "POST",
@@ -144,7 +172,6 @@ export const projectAPI = {
         }),
 };
 
-// Note API functions
 export const noteAPI = {
     create: (projectId, noteData) =>
         apiRequest(`/notes/${projectId}/createNote`, {
@@ -166,7 +193,6 @@ export const noteAPI = {
         }),
 };
 
-// Health check
 export const healthAPI = {
     check: () => apiRequest("/health"),
 };

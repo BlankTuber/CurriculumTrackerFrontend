@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { curriculumAPI, projectAPI } from "../utils/api";
+import { curriculumAPI, projectAPI, levelAPI } from "../utils/api";
+import {
+    getLevelForStage,
+    sortProjectsByStageAndOrder,
+    sortLevelsByOrder,
+    filterProjectsByStage,
+    filterProjectsByLevel,
+    getProjectStats,
+} from "../utils/stageUtils";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import CurriculumForm from "../components/CurriculumForm";
 import ProjectForm from "../components/ProjectForm";
 import ResourceForm from "../components/ResourceForm";
+import LevelForm from "../components/LevelForm";
+import ProjectFilter from "../components/ProjectFilter";
 import Notification from "../components/Notification";
 
 const CurriculumDetail = () => {
@@ -19,14 +29,22 @@ const CurriculumDetail = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [showResourceModal, setShowResourceModal] = useState(false);
+    const [showLevelModal, setShowLevelModal] = useState(false);
     const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
     const [showDeleteResourceModal, setShowDeleteResourceModal] =
         useState(false);
+    const [showDeleteLevelModal, setShowDeleteLevelModal] = useState(false);
+    const [showEditLevelModal, setShowEditLevelModal] = useState(false);
 
     const [projectToDelete, setProjectToDelete] = useState(null);
     const [resourceToDelete, setResourceToDelete] = useState(null);
+    const [levelToDelete, setLevelToDelete] = useState(null);
+    const [levelToEdit, setLevelToEdit] = useState(null);
 
-    // Notification state
+    const [stageFilter, setStageFilter] = useState("");
+    const [levelFilter, setLevelFilter] = useState("");
+    const [completionFilter, setCompletionFilter] = useState("");
+
     const [notification, setNotification] = useState({
         isOpen: false,
         type: "info",
@@ -77,7 +95,6 @@ const CurriculumDetail = () => {
     };
 
     const handleProjectSuccess = (newProject) => {
-        // Ensure the new project has the curriculum information
         const projectWithCurriculum = {
             ...newProject,
             curriculum: newProject.curriculum || {
@@ -102,6 +119,27 @@ const CurriculumDetail = () => {
         showNotification("success", "Success", "Resource added successfully!");
     };
 
+    const handleLevelSuccess = (newLevel) => {
+        setCurriculum((prev) => ({
+            ...prev,
+            levels: [...(prev.levels || []), newLevel],
+        }));
+        setShowLevelModal(false);
+        showNotification("success", "Success", "Level created successfully!");
+    };
+
+    const handleEditLevelSuccess = (updatedLevel) => {
+        setCurriculum((prev) => ({
+            ...prev,
+            levels: prev.levels.map((level) =>
+                level._id === updatedLevel._id ? updatedLevel : level
+            ),
+        }));
+        setShowEditLevelModal(false);
+        setLevelToEdit(null);
+        showNotification("success", "Success", "Level updated successfully!");
+    };
+
     const handleToggleProjectCompletion = async (project) => {
         try {
             const result = await projectAPI.update(project._id, {
@@ -114,7 +152,6 @@ const CurriculumDetail = () => {
                     p._id === project._id
                         ? {
                               ...result.project,
-                              // Preserve any additional project data that might not be in the API response
                               curriculum:
                                   result.project.curriculum || p.curriculum,
                               prerequisites:
@@ -215,22 +252,77 @@ const CurriculumDetail = () => {
         setResourceToDelete(null);
     };
 
-    const getProjectStats = () => {
-        if (!curriculum?.projects) return { total: 0, completed: 0 };
-        const total = curriculum.projects.length;
-        const completed = curriculum.projects.filter((p) => p.completed).length;
-        return { total, completed };
+    const handleDeleteLevelClick = (level) => {
+        setLevelToDelete(level);
+        setShowDeleteLevelModal(true);
     };
 
-    const sortedProjects = curriculum?.projects
-        ? [...curriculum.projects].sort((a, b) => {
-              // Sort by order if both have order, otherwise by creation date
-              if (a.order && b.order) return a.order - b.order;
-              if (a.order && !b.order) return -1;
-              if (!a.order && b.order) return 1;
-              return new Date(a.createdAt) - new Date(b.createdAt);
-          })
-        : [];
+    const handleDeleteLevelConfirm = async () => {
+        if (!levelToDelete) return;
+
+        try {
+            await levelAPI.delete(levelToDelete._id);
+            setCurriculum((prev) => ({
+                ...prev,
+                levels: prev.levels.filter((l) => l._id !== levelToDelete._id),
+            }));
+            setShowDeleteLevelModal(false);
+            setLevelToDelete(null);
+            showNotification(
+                "success",
+                "Success",
+                "Level deleted successfully!"
+            );
+        } catch (error) {
+            showNotification(
+                "error",
+                "Error",
+                `Failed to delete level: ${error.message}`
+            );
+        }
+    };
+
+    const handleDeleteLevelCancel = () => {
+        setShowDeleteLevelModal(false);
+        setLevelToDelete(null);
+    };
+
+    const handleEditLevelClick = (level) => {
+        setLevelToEdit(level);
+        setShowEditLevelModal(true);
+    };
+
+    const getFilteredProjects = () => {
+        if (!curriculum?.projects) return [];
+
+        let filteredProjects = [...curriculum.projects];
+
+        if (stageFilter) {
+            filteredProjects = filterProjectsByStage(
+                filteredProjects,
+                stageFilter
+            );
+        }
+
+        if (levelFilter) {
+            filteredProjects = filterProjectsByLevel(
+                filteredProjects,
+                curriculum.levels,
+                levelFilter
+            );
+        }
+
+        if (completionFilter) {
+            filteredProjects = filteredProjects.filter((p) =>
+                completionFilter === "completed" ? p.completed : !p.completed
+            );
+        }
+
+        return sortProjectsByStageAndOrder(filteredProjects);
+    };
+
+    const sortedLevels = sortLevelsByOrder(curriculum?.levels || []);
+    const sortedProjects = getFilteredProjects();
 
     if (loading) {
         return <LoadingSpinner message="Loading curriculum..." />;
@@ -264,11 +356,10 @@ const CurriculumDetail = () => {
         );
     }
 
-    const { total, completed } = getProjectStats();
+    const { total, completed } = getProjectStats(curriculum?.projects || []);
 
     return (
         <div>
-            {/* Header */}
             <div className="flex-between mb-2">
                 <div>
                     <Link
@@ -311,7 +402,91 @@ const CurriculumDetail = () => {
             </div>
 
             <div className="grid grid-2">
-                {/* Resources Section */}
+                <ProjectFilter
+                    projects={curriculum.projects || []}
+                    levels={curriculum.levels || []}
+                    stageFilter={stageFilter}
+                    levelFilter={levelFilter}
+                    completionFilter={completionFilter}
+                    onStageChange={setStageFilter}
+                    onLevelChange={setLevelFilter}
+                    onCompletionChange={setCompletionFilter}
+                    showCompletionFilter={true}
+                />
+
+                <div className="card">
+                    <div className="card-header">
+                        <div className="flex-between">
+                            <h2 className="card-title">Levels</h2>
+                            <button
+                                onClick={() => setShowLevelModal(true)}
+                                className="btn btn-primary btn-small"
+                            >
+                                Add Level
+                            </button>
+                        </div>
+                    </div>
+
+                    {sortedLevels.length > 0 ? (
+                        <div className="list">
+                            {sortedLevels.map((level) => (
+                                <div key={level._id} className="list-item">
+                                    <div style={{ flex: 1 }}>
+                                        <h4>{level.name}</h4>
+                                        <p
+                                            className="text-muted"
+                                            style={{ fontSize: "0.9rem" }}
+                                        >
+                                            {level.description}
+                                        </p>
+                                        <div
+                                            className="flex"
+                                            style={{
+                                                gap: "1rem",
+                                                alignItems: "center",
+                                            }}
+                                        >
+                                            <span
+                                                className="text-muted"
+                                                style={{ fontSize: "0.8rem" }}
+                                            >
+                                                Stages {level.stageStart}-
+                                                {level.stageEnd}
+                                            </span>
+                                            <span
+                                                className="text-muted"
+                                                style={{ fontSize: "0.8rem" }}
+                                            >
+                                                Order: {level.order}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="btn-group">
+                                        <button
+                                            onClick={() =>
+                                                handleEditLevelClick(level)
+                                            }
+                                            className="btn btn-secondary btn-small"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                handleDeleteLevelClick(level)
+                                            }
+                                            className="btn btn-danger btn-small"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-muted text-center">No levels yet</p>
+                    )}
+                </div>
+
                 <div className="card">
                     <div className="card-header">
                         <div className="flex-between">
@@ -364,24 +539,29 @@ const CurriculumDetail = () => {
                         </p>
                     )}
                 </div>
+            </div>
 
-                {/* Projects Section */}
-                <div className="card">
-                    <div className="card-header">
-                        <div className="flex-between">
-                            <h2 className="card-title">Projects</h2>
-                            <button
-                                onClick={() => setShowProjectModal(true)}
-                                className="btn btn-primary btn-small"
-                            >
-                                Add Project
-                            </button>
-                        </div>
+            <div className="card">
+                <div className="card-header">
+                    <div className="flex-between">
+                        <h2 className="card-title">Projects</h2>
+                        <button
+                            onClick={() => setShowProjectModal(true)}
+                            className="btn btn-primary btn-small"
+                        >
+                            Add Project
+                        </button>
                     </div>
+                </div>
 
-                    {sortedProjects.length > 0 ? (
-                        <div className="list">
-                            {sortedProjects.map((project) => (
+                {sortedProjects.length > 0 ? (
+                    <div className="list">
+                        {sortedProjects.map((project) => {
+                            const projectLevel = getLevelForStage(
+                                curriculum.levels || [],
+                                project.stage
+                            );
+                            return (
                                 <div
                                     key={project._id}
                                     className="list-item"
@@ -422,16 +602,6 @@ const CurriculumDetail = () => {
                                                         ✓
                                                     </span>
                                                 )}
-                                                {project.order && (
-                                                    <span
-                                                        className="text-muted"
-                                                        style={{
-                                                            fontSize: "0.8rem",
-                                                        }}
-                                                    >
-                                                        #{project.order}
-                                                    </span>
-                                                )}
                                             </div>
                                             <p
                                                 className="text-muted"
@@ -447,8 +617,29 @@ const CurriculumDetail = () => {
                                                 style={{
                                                     gap: "1rem",
                                                     alignItems: "center",
+                                                    marginBottom: "0.5rem",
                                                 }}
                                             >
+                                                <span
+                                                    className="text-muted"
+                                                    style={{
+                                                        fontSize: "0.8rem",
+                                                    }}
+                                                >
+                                                    Stage {project.stage}
+                                                    {project.order &&
+                                                        ` #${project.order}`}
+                                                </span>
+                                                {projectLevel && (
+                                                    <span
+                                                        className="text-primary"
+                                                        style={{
+                                                            fontSize: "0.8rem",
+                                                        }}
+                                                    >
+                                                        {projectLevel.name}
+                                                    </span>
+                                                )}
                                                 <span
                                                     className={
                                                         project.completed
@@ -516,17 +707,18 @@ const CurriculumDetail = () => {
                                         </button>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-muted text-center">
-                            No projects yet
-                        </p>
-                    )}
-                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <p className="text-muted text-center">
+                        {stageFilter || levelFilter || completionFilter
+                            ? "No projects match the current filters"
+                            : "No projects yet"}
+                    </p>
+                )}
             </div>
 
-            {/* Edit Curriculum Modal */}
             <Modal
                 isOpen={showEditModal}
                 onClose={() => setShowEditModal(false)}
@@ -539,7 +731,6 @@ const CurriculumDetail = () => {
                 />
             </Modal>
 
-            {/* Create Project Modal */}
             <Modal
                 isOpen={showProjectModal}
                 onClose={() => setShowProjectModal(false)}
@@ -552,7 +743,6 @@ const CurriculumDetail = () => {
                 />
             </Modal>
 
-            {/* Add Resource Modal */}
             <Modal
                 isOpen={showResourceModal}
                 onClose={() => setShowResourceModal(false)}
@@ -565,7 +755,31 @@ const CurriculumDetail = () => {
                 />
             </Modal>
 
-            {/* Delete Project Confirmation Modal */}
+            <Modal
+                isOpen={showLevelModal}
+                onClose={() => setShowLevelModal(false)}
+                title="Create New Level"
+            >
+                <LevelForm
+                    curriculumId={curriculum._id}
+                    onSuccess={handleLevelSuccess}
+                    onCancel={() => setShowLevelModal(false)}
+                />
+            </Modal>
+
+            <Modal
+                isOpen={showEditLevelModal}
+                onClose={() => setShowEditLevelModal(false)}
+                title="Edit Level"
+            >
+                <LevelForm
+                    level={levelToEdit}
+                    curriculumId={curriculum._id}
+                    onSuccess={handleEditLevelSuccess}
+                    onCancel={() => setShowEditLevelModal(false)}
+                />
+            </Modal>
+
             <Modal
                 isOpen={showDeleteProjectModal}
                 onClose={handleDeleteProjectCancel}
@@ -598,7 +812,6 @@ const CurriculumDetail = () => {
                 </div>
             </Modal>
 
-            {/* Delete Resource Confirmation Modal */}
             <Modal
                 isOpen={showDeleteResourceModal}
                 onClose={handleDeleteResourceCancel}
@@ -628,7 +841,35 @@ const CurriculumDetail = () => {
                 </div>
             </Modal>
 
-            {/* Notification */}
+            <Modal
+                isOpen={showDeleteLevelModal}
+                onClose={handleDeleteLevelCancel}
+                title="Delete Level"
+            >
+                <div className="mb-1">
+                    <p className="text-error mb-1">
+                        ⚠️ Are you sure you want to delete "
+                        {levelToDelete?.name}"?
+                    </p>
+                    <p className="text-muted">This action cannot be undone.</p>
+                </div>
+
+                <div className="btn-group">
+                    <button
+                        onClick={handleDeleteLevelConfirm}
+                        className="btn btn-danger"
+                    >
+                        Delete Level
+                    </button>
+                    <button
+                        onClick={handleDeleteLevelCancel}
+                        className="btn btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </Modal>
+
             <Notification
                 isOpen={notification.isOpen}
                 onClose={closeNotification}
