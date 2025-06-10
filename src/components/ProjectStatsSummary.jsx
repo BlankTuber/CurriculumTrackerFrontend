@@ -4,11 +4,13 @@ import {
     sortLevelsByOrder,
     filterProjectsByLevel,
 } from "../utils/stageUtils";
+import { PROJECT_STATES, PROJECT_STATE_LABELS } from "../utils/projectUtils";
 
 const ProjectStatsSummary = ({
     projects = [],
     levels = [],
     showLevelBreakdown = false,
+    showStateBreakdown = false,
 }) => {
     const overallStats = getProjectStats(projects);
     const sortedLevels = sortLevelsByOrder(levels);
@@ -21,6 +23,19 @@ const ProjectStatsSummary = ({
         );
         return getProjectStats(levelProjects);
     };
+
+    const getStateStats = () => {
+        const stats = {};
+        Object.keys(PROJECT_STATES).forEach((stateKey) => {
+            const stateValue = PROJECT_STATES[stateKey];
+            stats[stateValue] = projects.filter(
+                (p) => p.state === stateValue
+            ).length;
+        });
+        return stats;
+    };
+
+    const stateStats = showStateBreakdown ? getStateStats() : {};
 
     return (
         <div className="card">
@@ -83,6 +98,30 @@ const ProjectStatsSummary = ({
                     </div>
                 )}
             </div>
+
+            {showStateBreakdown && Object.keys(stateStats).length > 0 && (
+                <div className="mb-2">
+                    <h4
+                        className="text-muted mb-1"
+                        style={{ fontSize: "0.9rem" }}
+                    >
+                        Projects by State
+                    </h4>
+                    {Object.entries(stateStats).map(([state, count]) => (
+                        <div key={state} className="flex-between mb-1">
+                            <span style={{ fontSize: "0.9rem" }}>
+                                {PROJECT_STATE_LABELS[state]}:
+                            </span>
+                            <span
+                                className="text-muted"
+                                style={{ fontSize: "0.8rem" }}
+                            >
+                                {count}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {showLevelBreakdown && sortedLevels.length > 0 && (
                 <div>

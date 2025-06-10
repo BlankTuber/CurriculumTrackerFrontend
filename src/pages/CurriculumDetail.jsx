@@ -9,6 +9,13 @@ import {
     filterProjectsByLevel,
     getProjectStats,
 } from "../utils/stageUtils";
+import {
+    PROJECT_STATES,
+    PROJECT_STATE_LABELS,
+    PROJECT_STATE_COLORS,
+    constructGithubUrl,
+} from "../utils/projectUtils";
+import { useAuth } from "../contexts/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import CurriculumForm from "../components/CurriculumForm";
@@ -21,6 +28,7 @@ import Notification from "../components/Notification";
 const CurriculumDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     const [curriculum, setCurriculum] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -43,7 +51,7 @@ const CurriculumDetail = () => {
 
     const [stageFilter, setStageFilter] = useState("");
     const [levelFilter, setLevelFilter] = useState("");
-    const [completionFilter, setCompletionFilter] = useState("");
+    const [stateFilter, setStateFilter] = useState("");
 
     const [notification, setNotification] = useState({
         isOpen: false,
@@ -140,10 +148,10 @@ const CurriculumDetail = () => {
         showNotification("success", "Success", "Level updated successfully!");
     };
 
-    const handleToggleProjectCompletion = async (project) => {
+    const handleUpdateProjectState = async (project, newState) => {
         try {
             const result = await projectAPI.update(project._id, {
-                completed: !project.completed,
+                state: newState,
             });
 
             setCurriculum((prev) => ({
@@ -165,9 +173,7 @@ const CurriculumDetail = () => {
             showNotification(
                 "success",
                 "Success",
-                `Project "${project.name}" marked as ${
-                    result.project.completed ? "completed" : "incomplete"
-                }!`
+                `Project "${project.name}" state updated to ${PROJECT_STATE_LABELS[newState]}!`
             );
         } catch (error) {
             showNotification(
@@ -312,9 +318,9 @@ const CurriculumDetail = () => {
             );
         }
 
-        if (completionFilter) {
-            filteredProjects = filteredProjects.filter((p) =>
-                completionFilter === "completed" ? p.completed : !p.completed
+        if (stateFilter) {
+            filteredProjects = filteredProjects.filter(
+                (p) => p.state === stateFilter
             );
         }
 
@@ -407,11 +413,11 @@ const CurriculumDetail = () => {
                     levels={curriculum.levels || []}
                     stageFilter={stageFilter}
                     levelFilter={levelFilter}
-                    completionFilter={completionFilter}
+                    stateFilter={stateFilter}
                     onStageChange={setStageFilter}
                     onLevelChange={setLevelFilter}
-                    onCompletionChange={setCompletionFilter}
-                    showCompletionFilter={true}
+                    onStateChange={setStateFilter}
+                    showStateFilter={true}
                 />
 
                 <div className="card">
@@ -561,6 +567,11 @@ const CurriculumDetail = () => {
                                 curriculum.levels || [],
                                 project.stage
                             );
+                            const githubUrl = constructGithubUrl(
+                                user?.githubUsername,
+                                project.githubRepo
+                            );
+
                             return (
                                 <div
                                     key={project._id}
@@ -578,6 +589,7 @@ const CurriculumDetail = () => {
                                                     alignItems: "center",
                                                     gap: "0.5rem",
                                                     marginBottom: "0.5rem",
+                                                    flexWrap: "wrap",
                                                 }}
                                             >
                                                 <h4>
@@ -592,16 +604,34 @@ const CurriculumDetail = () => {
                                                         {project.name}
                                                     </Link>
                                                 </h4>
-                                                {project.completed && (
+                                                {project.identifier && (
                                                     <span
-                                                        className="text-success"
+                                                        className="text-primary"
                                                         style={{
-                                                            fontSize: "1.2rem",
+                                                            fontSize: "1rem",
+                                                            fontWeight: "600",
                                                         }}
                                                     >
-                                                        ✓
+                                                        [{project.identifier}]
                                                     </span>
                                                 )}
+                                                <span
+                                                    className={
+                                                        PROJECT_STATE_COLORS[
+                                                            project.state
+                                                        ]
+                                                    }
+                                                    style={{
+                                                        fontSize: "0.9rem",
+                                                        fontWeight: "500",
+                                                    }}
+                                                >
+                                                    {
+                                                        PROJECT_STATE_LABELS[
+                                                            project.state
+                                                        ]
+                                                    }
+                                                </span>
                                             </div>
                                             <p
                                                 className="text-muted"
@@ -618,6 +648,7 @@ const CurriculumDetail = () => {
                                                     gap: "1rem",
                                                     alignItems: "center",
                                                     marginBottom: "0.5rem",
+                                                    flexWrap: "wrap",
                                                 }}
                                             >
                                                 <span
@@ -640,25 +671,9 @@ const CurriculumDetail = () => {
                                                         {projectLevel.name}
                                                     </span>
                                                 )}
-                                                <span
-                                                    className={
-                                                        project.completed
-                                                            ? "text-success"
-                                                            : "text-warning"
-                                                    }
-                                                    style={{
-                                                        fontSize: "0.8rem",
-                                                    }}
-                                                >
-                                                    {project.completed
-                                                        ? "Completed"
-                                                        : "In Progress"}
-                                                </span>
-                                                {project.githubLink && (
+                                                {githubUrl && (
                                                     <a
-                                                        href={
-                                                            project.githubLink
-                                                        }
+                                                        href={githubUrl}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="text-primary"
@@ -670,25 +685,71 @@ const CurriculumDetail = () => {
                                                     </a>
                                                 )}
                                             </div>
+                                            {project.topics &&
+                                                project.topics.length > 0 && (
+                                                    <div
+                                                        className="flex"
+                                                        style={{
+                                                            gap: "0.25rem",
+                                                            flexWrap: "wrap",
+                                                            marginBottom:
+                                                                "0.5rem",
+                                                        }}
+                                                    >
+                                                        {project.topics.map(
+                                                            (topic, index) => (
+                                                                <span
+                                                                    key={index}
+                                                                    style={{
+                                                                        background:
+                                                                            "var(--bg-tertiary)",
+                                                                        padding:
+                                                                            "0.125rem 0.25rem",
+                                                                        borderRadius:
+                                                                            "3px",
+                                                                        fontSize:
+                                                                            "0.7rem",
+                                                                        color: "var(--text-secondary)",
+                                                                    }}
+                                                                >
+                                                                    {topic}
+                                                                </span>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                )}
                                         </div>
                                     </div>
                                     <div className="btn-group">
-                                        <button
-                                            onClick={() =>
-                                                handleToggleProjectCompletion(
-                                                    project
+                                        <select
+                                            value={project.state}
+                                            onChange={(e) =>
+                                                handleUpdateProjectState(
+                                                    project,
+                                                    e.target.value
                                                 )
                                             }
-                                            className={`btn ${
-                                                project.completed
-                                                    ? "btn-warning"
-                                                    : "btn-success"
-                                            } btn-small`}
+                                            className="btn btn-secondary btn-small"
+                                            style={{
+                                                padding: "0.5rem",
+                                                minWidth: "auto",
+                                                border: "1px solid var(--border-color)",
+                                                borderRadius: "6px",
+                                                background:
+                                                    "var(--bg-tertiary)",
+                                            }}
                                         >
-                                            {project.completed
-                                                ? "Mark Incomplete"
-                                                : "Mark Complete"}
-                                        </button>
+                                            {Object.entries(
+                                                PROJECT_STATE_LABELS
+                                            ).map(([value, label]) => (
+                                                <option
+                                                    key={value}
+                                                    value={value}
+                                                >
+                                                    {label}
+                                                </option>
+                                            ))}
+                                        </select>
                                         <Link
                                             to={`/project/${project._id}`}
                                             className="btn btn-primary btn-small"
@@ -712,7 +773,7 @@ const CurriculumDetail = () => {
                     </div>
                 ) : (
                     <p className="text-muted text-center">
-                        {stageFilter || levelFilter || completionFilter
+                        {stageFilter || levelFilter || stateFilter
                             ? "No projects match the current filters"
                             : "No projects yet"}
                     </p>

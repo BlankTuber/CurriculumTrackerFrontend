@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { validateGithubUsername } from "../utils/projectUtils";
 
 const Register = () => {
     const [formData, setFormData] = useState({
         username: "",
         password: "",
         confirmPassword: "",
+        githubUsername: "",
     });
     const [loading, setLoading] = useState(false);
     const [validationError, setValidationError] = useState("");
@@ -46,6 +48,16 @@ const Register = () => {
             return false;
         }
 
+        if (
+            formData.githubUsername &&
+            !validateGithubUsername(formData.githubUsername)
+        ) {
+            setValidationError(
+                "GitHub username must be between 1-39 characters and contain only letters, numbers, and hyphens (cannot start/end with hyphen)"
+            );
+            return false;
+        }
+
         return true;
     };
 
@@ -59,6 +71,11 @@ const Register = () => {
         setLoading(true);
 
         const { confirmPassword, ...registerData } = formData;
+
+        if (!registerData.githubUsername.trim()) {
+            delete registerData.githubUsername;
+        }
+
         await register(registerData);
         setLoading(false);
     };
@@ -95,6 +112,30 @@ const Register = () => {
                             disabled={loading}
                             placeholder="3-30 characters, letters, numbers, and underscores only"
                         />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label" htmlFor="githubUsername">
+                            GitHub Username (optional)
+                        </label>
+                        <input
+                            type="text"
+                            id="githubUsername"
+                            name="githubUsername"
+                            value={formData.githubUsername}
+                            onChange={handleChange}
+                            className="form-input"
+                            maxLength={39}
+                            disabled={loading}
+                            placeholder="your-github-username"
+                        />
+                        <p
+                            className="text-muted"
+                            style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                        >
+                            Used to automatically generate GitHub links for your
+                            projects
+                        </p>
                     </div>
 
                     <div className="form-group">

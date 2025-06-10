@@ -1,19 +1,13 @@
-const handlePrerequisiteSuccess = (updatedProject) => {
-    const projectWithCurriculum = {
-        ...updatedProject,
-        curriculum: originalCurriculum,
-    };
-    setProject(projectWithCurriculum);
-    setShowPrerequisiteModal(false);
-    showNotification(
-        "success",
-        "Success",
-        "Prerequisites updated successfully!"
-    );
-};
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { projectAPI, noteAPI } from "../utils/api";
+import {
+    PROJECT_STATES,
+    PROJECT_STATE_LABELS,
+    PROJECT_STATE_COLORS,
+    constructGithubUrl,
+} from "../utils/projectUtils";
+import { useAuth } from "../contexts/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import ProjectForm from "../components/ProjectForm";
@@ -25,12 +19,13 @@ import Notification from "../components/Notification";
 const ProjectDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     const [project, setProject] = useState(null);
     const [originalCurriculum, setOriginalCurriculum] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [toggleLoading, setToggleLoading] = useState(false);
+    const [stateUpdateLoading, setStateUpdateLoading] = useState(false);
 
     const [showEditModal, setShowEditModal] = useState(false);
     const [showResourceModal, setShowResourceModal] = useState(false);
@@ -83,13 +78,13 @@ const ProjectDetail = () => {
         }
     };
 
-    const handleToggleCompletion = async () => {
+    const handleUpdateProjectState = async (newState) => {
         if (!project) return;
 
-        setToggleLoading(true);
+        setStateUpdateLoading(true);
         try {
             const result = await projectAPI.update(project._id, {
-                completed: !project.completed,
+                state: newState,
             });
             const projectWithCurriculum = {
                 ...result.project,
@@ -99,9 +94,7 @@ const ProjectDetail = () => {
             showNotification(
                 "success",
                 "Success",
-                `Project marked as ${
-                    result.project.completed ? "completed" : "incomplete"
-                }!`
+                `Project state updated to ${PROJECT_STATE_LABELS[newState]}!`
             );
         } catch (error) {
             showNotification(
@@ -110,7 +103,7 @@ const ProjectDetail = () => {
                 `Failed to update project: ${error.message}`
             );
         } finally {
-            setToggleLoading(false);
+            setStateUpdateLoading(false);
         }
     };
 
@@ -292,6 +285,10 @@ const ProjectDetail = () => {
     }
 
     const projectLevel = getLevelForStage(project.stage);
+    const githubUrl = constructGithubUrl(
+        user?.githubUsername,
+        project.githubRepo
+    );
 
     return (
         <div>
@@ -313,17 +310,30 @@ const ProjectDetail = () => {
                             alignItems: "center",
                             gap: "1rem",
                             marginTop: "0.5rem",
+                            flexWrap: "wrap",
                         }}
                     >
                         <h1>{project.name}</h1>
-                        {project.completed && (
+                        {project.identifier && (
                             <span
-                                className="text-success"
-                                style={{ fontSize: "1.5rem" }}
+                                className="text-primary"
+                                style={{
+                                    fontSize: "1.25rem",
+                                    fontWeight: "600",
+                                }}
                             >
-                                ✓
+                                [{project.identifier}]
                             </span>
                         )}
+                        <span
+                            className={PROJECT_STATE_COLORS[project.state]}
+                            style={{
+                                fontSize: "1.1rem",
+                                fontWeight: "500",
+                            }}
+                        >
+                            {PROJECT_STATE_LABELS[project.state]}
+                        </span>
                     </div>
                     <p className="text-muted">{project.description}</p>
                     <div
@@ -343,43 +353,67 @@ const ProjectDetail = () => {
                                 Level: {projectLevel.name}
                             </span>
                         )}
-                        <span
-                            className={
-                                project.completed
-                                    ? "text-success"
-                                    : "text-warning"
-                            }
-                        >
-                            Status:{" "}
-                            {project.completed ? "Completed" : "In Progress"}
-                        </span>
+                        {githubUrl && (
+                            <a
+                                href={githubUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary"
+                            >
+                                View on GitHub →
+                            </a>
+                        )}
                     </div>
-                    {project.githubLink && (
-                        <a
-                            href={project.githubLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary"
-                            style={{ display: "block", marginTop: "0.5rem" }}
+                    {project.topics && project.topics.length > 0 && (
+                        <div
+                            className="flex"
+                            style={{
+                                gap: "0.25rem",
+                                flexWrap: "wrap",
+                                marginTop: "0.5rem",
+                            }}
                         >
-                            View on GitHub →
-                        </a>
+                            {project.topics.map((topic, index) => (
+                                <span
+                                    key={index}
+                                    style={{
+                                        background: "var(--bg-tertiary)",
+                                        padding: "0.25rem 0.5rem",
+                                        borderRadius: "4px",
+                                        fontSize: "0.8rem",
+                                        color: "var(--text-secondary)",
+                                    }}
+                                >
+                                    {topic}
+                                </span>
+                            ))}
+                        </div>
                     )}
                 </div>
                 <div className="btn-group">
-                    <button
-                        onClick={handleToggleCompletion}
-                        className={`btn ${
-                            project.completed ? "btn-warning" : "btn-success"
-                        } btn-small`}
-                        disabled={toggleLoading}
+                    <select
+                        value={project.state}
+                        onChange={(e) =>
+                            handleUpdateProjectState(e.target.value)
+                        }
+                        className="btn btn-secondary btn-small"
+                        disabled={stateUpdateLoading}
+                        style={{
+                            padding: "0.5rem",
+                            minWidth: "auto",
+                            border: "1px solid var(--border-color)",
+                            borderRadius: "6px",
+                            background: "var(--bg-tertiary)",
+                        }}
                     >
-                        {toggleLoading
-                            ? "Updating..."
-                            : project.completed
-                            ? "Mark Incomplete"
-                            : "Mark Complete"}
-                    </button>
+                        {Object.entries(PROJECT_STATE_LABELS).map(
+                            ([value, label]) => (
+                                <option key={value} value={value}>
+                                    {label}
+                                </option>
+                            )
+                        )}
+                    </select>
                     <button
                         onClick={() => setShowEditModal(true)}
                         className="btn btn-secondary btn-small"
@@ -406,7 +440,42 @@ const ProjectDetail = () => {
                         {project.prerequisites.map((prerequisite) => (
                             <div key={prerequisite._id} className="list-item">
                                 <div style={{ flex: 1 }}>
-                                    <h4>{prerequisite.name}</h4>
+                                    <div
+                                        className="flex"
+                                        style={{
+                                            gap: "0.5rem",
+                                            alignItems: "center",
+                                            marginBottom: "0.25rem",
+                                            flexWrap: "wrap",
+                                        }}
+                                    >
+                                        <h4>{prerequisite.name}</h4>
+                                        {prerequisite.identifier && (
+                                            <span
+                                                className="text-primary"
+                                                style={{
+                                                    fontSize: "0.9rem",
+                                                    fontWeight: "600",
+                                                }}
+                                            >
+                                                [{prerequisite.identifier}]
+                                            </span>
+                                        )}
+                                        <span
+                                            className={
+                                                PROJECT_STATE_COLORS[
+                                                    prerequisite.state
+                                                ]
+                                            }
+                                            style={{ fontSize: "0.9rem" }}
+                                        >
+                                            {
+                                                PROJECT_STATE_LABELS[
+                                                    prerequisite.state
+                                                ]
+                                            }
+                                        </span>
+                                    </div>
                                     <p
                                         className="text-muted"
                                         style={{ fontSize: "0.9rem" }}
@@ -426,18 +495,54 @@ const ProjectDetail = () => {
                                         >
                                             Stage {prerequisite.stage}
                                         </span>
-                                        <span
-                                            className={
-                                                prerequisite.completed
-                                                    ? "text-success"
-                                                    : "text-warning"
-                                            }
-                                        >
-                                            {prerequisite.completed
-                                                ? "✓ Completed"
-                                                : "In Progress"}
-                                        </span>
                                     </div>
+                                    {prerequisite.topics &&
+                                        prerequisite.topics.length > 0 && (
+                                            <div
+                                                className="flex"
+                                                style={{
+                                                    gap: "0.25rem",
+                                                    flexWrap: "wrap",
+                                                    marginTop: "0.25rem",
+                                                }}
+                                            >
+                                                {prerequisite.topics
+                                                    .slice(0, 3)
+                                                    .map((topic, index) => (
+                                                        <span
+                                                            key={index}
+                                                            style={{
+                                                                background:
+                                                                    "var(--bg-primary)",
+                                                                padding:
+                                                                    "0.125rem 0.25rem",
+                                                                borderRadius:
+                                                                    "3px",
+                                                                fontSize:
+                                                                    "0.7rem",
+                                                                color: "var(--text-secondary)",
+                                                            }}
+                                                        >
+                                                            {topic}
+                                                        </span>
+                                                    ))}
+                                                {prerequisite.topics.length >
+                                                    3 && (
+                                                    <span
+                                                        style={{
+                                                            fontSize: "0.7rem",
+                                                            color: "var(--text-muted)",
+                                                            fontStyle: "italic",
+                                                        }}
+                                                    >
+                                                        +
+                                                        {prerequisite.topics
+                                                            .length - 3}{" "}
+                                                        more
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                 </div>
                             </div>
                         ))}

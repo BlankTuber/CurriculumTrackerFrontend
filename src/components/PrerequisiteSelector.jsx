@@ -3,6 +3,11 @@ import {
     sortProjectsByStageAndOrder,
     getLevelForStage,
 } from "../utils/stageUtils";
+import {
+    PROJECT_STATE_LABELS,
+    PROJECT_STATE_COLORS,
+    isProjectCompleted,
+} from "../utils/projectUtils";
 
 const PrerequisiteSelector = ({
     availableProjects = [],
@@ -13,7 +18,7 @@ const PrerequisiteSelector = ({
 }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [stageFilter, setStageFilter] = useState("");
-    const [completionFilter, setCompletionFilter] = useState("");
+    const [stateFilter, setStateFilter] = useState("");
 
     const filteredAndSortedProjects = useMemo(() => {
         let filtered = [...availableProjects];
@@ -23,7 +28,13 @@ const PrerequisiteSelector = ({
             filtered = filtered.filter(
                 (project) =>
                     project.name.toLowerCase().includes(search) ||
-                    project.description.toLowerCase().includes(search)
+                    project.description.toLowerCase().includes(search) ||
+                    (project.identifier &&
+                        project.identifier.toLowerCase().includes(search)) ||
+                    (project.topics &&
+                        project.topics.some((topic) =>
+                            topic.toLowerCase().includes(search)
+                        ))
             );
         }
 
@@ -32,16 +43,14 @@ const PrerequisiteSelector = ({
             filtered = filtered.filter((project) => project.stage === stage);
         }
 
-        if (completionFilter) {
-            filtered = filtered.filter((project) =>
-                completionFilter === "completed"
-                    ? project.completed
-                    : !project.completed
+        if (stateFilter) {
+            filtered = filtered.filter(
+                (project) => project.state === stateFilter
             );
         }
 
         return sortProjectsByStageAndOrder(filtered);
-    }, [availableProjects, searchTerm, stageFilter, completionFilter]);
+    }, [availableProjects, searchTerm, stageFilter, stateFilter]);
 
     const handleTogglePrerequisite = (projectId) => {
         const newSelection = selectedPrerequisites.includes(projectId)
@@ -54,7 +63,7 @@ const PrerequisiteSelector = ({
     const clearFilters = () => {
         setSearchTerm("");
         setStageFilter("");
-        setCompletionFilter("");
+        setStateFilter("");
     };
 
     const uniqueStages = [
@@ -87,7 +96,7 @@ const PrerequisiteSelector = ({
                 <div className="form-group">
                     <input
                         type="text"
-                        placeholder="Search projects by name or description..."
+                        placeholder="Search by name, description, identifier, or topics..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="form-input"
@@ -114,21 +123,24 @@ const PrerequisiteSelector = ({
 
                     <div className="form-group">
                         <select
-                            value={completionFilter}
-                            onChange={(e) =>
-                                setCompletionFilter(e.target.value)
-                            }
+                            value={stateFilter}
+                            onChange={(e) => setStateFilter(e.target.value)}
                             className="form-select"
                             disabled={disabled}
                         >
-                            <option value="">All Projects</option>
-                            <option value="completed">Completed Only</option>
-                            <option value="incomplete">In Progress Only</option>
+                            <option value="">All States</option>
+                            {Object.entries(PROJECT_STATE_LABELS).map(
+                                ([value, label]) => (
+                                    <option key={value} value={value}>
+                                        {label}
+                                    </option>
+                                )
+                            )}
                         </select>
                     </div>
                 </div>
 
-                {(searchTerm || stageFilter || completionFilter) && (
+                {(searchTerm || stageFilter || stateFilter) && (
                     <div className="flex-between">
                         <span
                             className="text-muted"
@@ -249,6 +261,7 @@ const PrerequisiteSelector = ({
                                                                 "center",
                                                             marginBottom:
                                                                 "0.25rem",
+                                                            flexWrap: "wrap",
                                                         }}
                                                     >
                                                         <span
@@ -259,6 +272,23 @@ const PrerequisiteSelector = ({
                                                         >
                                                             {project.name}
                                                         </span>
+                                                        {project.identifier && (
+                                                            <span
+                                                                className="text-primary"
+                                                                style={{
+                                                                    fontSize:
+                                                                        "0.8rem",
+                                                                    fontWeight:
+                                                                        "600",
+                                                                }}
+                                                            >
+                                                                [
+                                                                {
+                                                                    project.identifier
+                                                                }
+                                                                ]
+                                                            </span>
+                                                        )}
                                                         {project.order && (
                                                             <span
                                                                 className="text-muted"
@@ -270,17 +300,25 @@ const PrerequisiteSelector = ({
                                                                 #{project.order}
                                                             </span>
                                                         )}
-                                                        {project.completed && (
-                                                            <span
-                                                                className="text-success"
-                                                                style={{
-                                                                    fontSize:
-                                                                        "0.8rem",
-                                                                }}
-                                                            >
-                                                                ✓ Completed
-                                                            </span>
-                                                        )}
+                                                        <span
+                                                            className={
+                                                                PROJECT_STATE_COLORS[
+                                                                    project
+                                                                        .state
+                                                                ]
+                                                            }
+                                                            style={{
+                                                                fontSize:
+                                                                    "0.8rem",
+                                                            }}
+                                                        >
+                                                            {
+                                                                PROJECT_STATE_LABELS[
+                                                                    project
+                                                                        .state
+                                                                ]
+                                                            }
+                                                        </span>
                                                     </div>
                                                     <p
                                                         className="text-muted"
@@ -288,10 +326,52 @@ const PrerequisiteSelector = ({
                                                             fontSize: "0.85rem",
                                                             margin: 0,
                                                             lineHeight: "1.3",
+                                                            marginBottom:
+                                                                "0.25rem",
                                                         }}
                                                     >
                                                         {project.description}
                                                     </p>
+                                                    {project.topics &&
+                                                        project.topics.length >
+                                                            0 && (
+                                                            <div
+                                                                className="flex"
+                                                                style={{
+                                                                    gap: "0.25rem",
+                                                                    flexWrap:
+                                                                        "wrap",
+                                                                }}
+                                                            >
+                                                                {project.topics.map(
+                                                                    (
+                                                                        topic,
+                                                                        index
+                                                                    ) => (
+                                                                        <span
+                                                                            key={
+                                                                                index
+                                                                            }
+                                                                            style={{
+                                                                                background:
+                                                                                    "var(--bg-tertiary)",
+                                                                                padding:
+                                                                                    "0.125rem 0.25rem",
+                                                                                borderRadius:
+                                                                                    "3px",
+                                                                                fontSize:
+                                                                                    "0.7rem",
+                                                                                color: "var(--text-secondary)",
+                                                                            }}
+                                                                        >
+                                                                            {
+                                                                                topic
+                                                                            }
+                                                                        </span>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        )}
                                                 </div>
                                             </label>
                                         </div>

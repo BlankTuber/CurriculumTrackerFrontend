@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { projectAPI } from "../utils/api";
+import {
+    PROJECT_STATES,
+    PROJECT_STATE_LABELS,
+    validateIdentifier,
+    validateGithubRepo,
+} from "../utils/projectUtils";
 import PrerequisiteSelector from "./PrerequisiteSelector";
 
 const RESOURCE_TYPES = [
@@ -19,12 +25,16 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     const [formData, setFormData] = useState({
         name: project?.name || "",
         description: project?.description || "",
-        githubLink: project?.githubLink || "",
-        completed: project?.completed || false,
+        identifier: project?.identifier || "",
+        topics: project?.topics || [],
+        githubRepo: project?.githubRepo || "",
+        state: project?.state || PROJECT_STATES.NOT_STARTED,
         stage: project?.stage || "",
         order: project?.order || "",
         prerequisites: project?.prerequisites?.map((p) => p._id) || [],
     });
+
+    const [topicInput, setTopicInput] = useState("");
 
     const [projectResources, setProjectResources] = useState(
         project?.projectResources || [
@@ -59,10 +69,10 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     };
 
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
+        const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
-            [name]: type === "checkbox" ? checked : value,
+            [name]: value,
         }));
     };
 
@@ -71,6 +81,31 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
             ...prev,
             prerequisites: newSelection,
         }));
+    };
+
+    const handleTopicAdd = () => {
+        const trimmedTopic = topicInput.trim();
+        if (trimmedTopic && !formData.topics.includes(trimmedTopic)) {
+            setFormData((prev) => ({
+                ...prev,
+                topics: [...prev.topics, trimmedTopic],
+            }));
+            setTopicInput("");
+        }
+    };
+
+    const handleTopicRemove = (topicToRemove) => {
+        setFormData((prev) => ({
+            ...prev,
+            topics: prev.topics.filter((topic) => topic !== topicToRemove),
+        }));
+    };
+
+    const handleTopicInputKeyPress = (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleTopicAdd();
+        }
     };
 
     const handleResourceChange = (index, field, value) => {
@@ -115,13 +150,17 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
             return false;
         }
 
-        if (!formData.githubLink.trim()) {
-            setError("GitHub link is required");
+        if (formData.identifier && !validateIdentifier(formData.identifier)) {
+            setError(
+                "Identifier can only contain letters, numbers, underscores, and hyphens (max 20 characters)"
+            );
             return false;
         }
 
-        if (!isValidGitHubUrl(formData.githubLink)) {
-            setError("Please provide a valid GitHub URL");
+        if (formData.githubRepo && !validateGithubRepo(formData.githubRepo)) {
+            setError(
+                "GitHub repository name can only contain letters, numbers, dots, underscores, and hyphens (max 100 characters)"
+            );
             return false;
         }
 
@@ -139,6 +178,15 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         if (formData.order && (isNaN(formData.order) || formData.order < 1)) {
             setError("Order must be a positive number");
             return false;
+        }
+
+        for (let i = 0; i < formData.topics.length; i++) {
+            if (formData.topics[i].length > 50) {
+                setError(
+                    `Topic "${formData.topics[i]}" is too long (max 50 characters)`
+                );
+                return false;
+            }
         }
 
         for (let i = 0; i < projectResources.length; i++) {
@@ -159,15 +207,6 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         try {
             new URL(string);
             return true;
-        } catch (_) {
-            return false;
-        }
-    };
-
-    const isValidGitHubUrl = (url) => {
-        try {
-            const urlObj = new URL(url);
-            return urlObj.hostname === "github.com";
         } catch (_) {
             return false;
         }
@@ -249,24 +288,122 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                 />
             </div>
 
-            <div className="form-group">
-                <label className="form-label" htmlFor="githubLink">
-                    GitHub Link *
-                </label>
-                <input
-                    type="url"
-                    id="githubLink"
-                    name="githubLink"
-                    value={formData.githubLink}
-                    onChange={handleChange}
-                    className="form-input"
-                    required
-                    disabled={loading}
-                    placeholder="https://github.com/username/repository"
-                />
+            <div className="grid grid-2">
+                <div className="form-group">
+                    <label className="form-label" htmlFor="identifier">
+                        Identifier (optional)
+                    </label>
+                    <input
+                        type="text"
+                        id="identifier"
+                        name="identifier"
+                        value={formData.identifier}
+                        onChange={handleChange}
+                        className="form-input"
+                        maxLength={20}
+                        disabled={loading}
+                        placeholder="e.g., R1, L2P3"
+                    />
+                    <p
+                        className="text-muted"
+                        style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                    >
+                        Letters, numbers, underscores, and hyphens only
+                    </p>
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label" htmlFor="githubRepo">
+                        GitHub Repository (optional)
+                    </label>
+                    <input
+                        type="text"
+                        id="githubRepo"
+                        name="githubRepo"
+                        value={formData.githubRepo}
+                        onChange={handleChange}
+                        className="form-input"
+                        maxLength={100}
+                        disabled={loading}
+                        placeholder="repository-name"
+                    />
+                    <p
+                        className="text-muted"
+                        style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                    >
+                        Repository name only (not full URL)
+                    </p>
+                </div>
             </div>
 
-            <div className="grid grid-2">
+            <div className="form-group">
+                <label className="form-label">Topics</label>
+                <div
+                    className="flex"
+                    style={{ gap: "0.5rem", marginBottom: "0.5rem" }}
+                >
+                    <input
+                        type="text"
+                        value={topicInput}
+                        onChange={(e) => setTopicInput(e.target.value)}
+                        onKeyPress={handleTopicInputKeyPress}
+                        className="form-input"
+                        maxLength={50}
+                        disabled={loading}
+                        placeholder="Add a topic and press Enter"
+                        style={{ flex: 1 }}
+                    />
+                    <button
+                        type="button"
+                        onClick={handleTopicAdd}
+                        className="btn btn-secondary btn-small"
+                        disabled={loading || !topicInput.trim()}
+                    >
+                        Add
+                    </button>
+                </div>
+                {formData.topics.length > 0 && (
+                    <div
+                        className="flex"
+                        style={{ gap: "0.5rem", flexWrap: "wrap" }}
+                    >
+                        {formData.topics.map((topic, index) => (
+                            <span
+                                key={index}
+                                className="tag"
+                                style={{
+                                    background: "var(--bg-tertiary)",
+                                    padding: "0.25rem 0.5rem",
+                                    borderRadius: "4px",
+                                    fontSize: "0.8rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.25rem",
+                                }}
+                            >
+                                {topic}
+                                <button
+                                    type="button"
+                                    onClick={() => handleTopicRemove(topic)}
+                                    disabled={loading}
+                                    style={{
+                                        background: "none",
+                                        border: "none",
+                                        color: "var(--text-muted)",
+                                        cursor: "pointer",
+                                        padding: "0",
+                                        fontSize: "0.9rem",
+                                    }}
+                                >
+                                    ×
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div className="grid grid-3">
                 <div className="form-group">
                     <label className="form-label" htmlFor="stage">
                         Stage *
@@ -301,20 +438,28 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                         placeholder="Project order"
                     />
                 </div>
-            </div>
 
-            <div className="form-group">
-                <label className="form-label">
-                    <input
-                        type="checkbox"
-                        name="completed"
-                        checked={formData.completed}
+                <div className="form-group">
+                    <label className="form-label" htmlFor="state">
+                        State
+                    </label>
+                    <select
+                        id="state"
+                        name="state"
+                        value={formData.state}
                         onChange={handleChange}
+                        className="form-select"
                         disabled={loading}
-                        style={{ marginRight: "0.5rem" }}
-                    />
-                    Mark as completed
-                </label>
+                    >
+                        {Object.entries(PROJECT_STATE_LABELS).map(
+                            ([value, label]) => (
+                                <option key={value} value={value}>
+                                    {label}
+                                </option>
+                            )
+                        )}
+                    </select>
+                </div>
             </div>
 
             {availableProjects.length > 0 && (

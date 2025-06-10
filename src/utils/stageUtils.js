@@ -1,3 +1,5 @@
+import { isProjectCompleted } from "./projectUtils";
+
 export const getLevelForStage = (levels, stage) => {
     if (!levels || !Array.isArray(levels)) return null;
     return levels.find(
@@ -51,7 +53,7 @@ export const getProjectStats = (projects) => {
     }
 
     const total = projects.length;
-    const completed = projects.filter((p) => p.completed).length;
+    const completed = projects.filter((p) => isProjectCompleted(p)).length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     return { total, completed, percentage };
@@ -61,7 +63,7 @@ export const getNextIncompleteProject = (projects) => {
     if (!projects || !Array.isArray(projects)) return null;
 
     const sortedProjects = sortProjectsByStageAndOrder(projects);
-    return sortedProjects.find((p) => !p.completed) || null;
+    return sortedProjects.find((p) => !isProjectCompleted(p)) || null;
 };
 
 export const validateStageRange = (

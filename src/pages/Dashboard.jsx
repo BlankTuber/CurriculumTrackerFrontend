@@ -7,12 +7,19 @@ import {
     getProjectStats,
     getNextIncompleteProject,
 } from "../utils/stageUtils";
+import {
+    PROJECT_STATE_LABELS,
+    PROJECT_STATE_COLORS,
+    constructGithubUrl,
+} from "../utils/projectUtils";
+import { useAuth } from "../contexts/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import CurriculumForm from "../components/CurriculumForm";
 import Notification from "../components/Notification";
 
 const Dashboard = () => {
+    const { user } = useAuth();
     const [curricula, setCurricula] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -113,11 +120,10 @@ const Dashboard = () => {
             (sum, curr) => sum + (curr.projects?.length || 0),
             0
         );
-        const completedProjects = curricula.reduce(
-            (sum, curr) =>
-                sum + (curr.projects?.filter((p) => p.completed).length || 0),
-            0
-        );
+        const completedProjects = curricula.reduce((sum, curr) => {
+            const stats = getProjectStats(curr.projects || []);
+            return sum + stats.completed;
+        }, 0);
         const totalResources = curricula.reduce(
             (sum, curr) => sum + (curr.resources?.length || 0),
             0
@@ -399,12 +405,40 @@ const Dashboard = () => {
                                                             fontSize: "0.9rem",
                                                         }}
                                                     >
-                                                        <div className="flex-between">
-                                                            <strong>
-                                                                {
-                                                                    nextProject.name
-                                                                }
-                                                            </strong>
+                                                        <div className="flex-between mb-1">
+                                                            <div
+                                                                className="flex"
+                                                                style={{
+                                                                    gap: "0.5rem",
+                                                                    alignItems:
+                                                                        "center",
+                                                                    flexWrap:
+                                                                        "wrap",
+                                                                }}
+                                                            >
+                                                                <strong>
+                                                                    {
+                                                                        nextProject.name
+                                                                    }
+                                                                </strong>
+                                                                {nextProject.identifier && (
+                                                                    <span
+                                                                        className="text-primary"
+                                                                        style={{
+                                                                            fontSize:
+                                                                                "0.8rem",
+                                                                            fontWeight:
+                                                                                "600",
+                                                                        }}
+                                                                    >
+                                                                        [
+                                                                        {
+                                                                            nextProject.identifier
+                                                                        }
+                                                                        ]
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                             <div
                                                                 className="flex"
                                                                 style={{
@@ -438,6 +472,114 @@ const Dashboard = () => {
                                                                 })()}
                                                             </div>
                                                         </div>
+                                                        <div
+                                                            className="flex"
+                                                            style={{
+                                                                gap: "0.5rem",
+                                                                alignItems:
+                                                                    "center",
+                                                                fontSize:
+                                                                    "0.8rem",
+                                                            }}
+                                                        >
+                                                            <span
+                                                                className={
+                                                                    PROJECT_STATE_COLORS[
+                                                                        nextProject
+                                                                            .state
+                                                                    ]
+                                                                }
+                                                            >
+                                                                {
+                                                                    PROJECT_STATE_LABELS[
+                                                                        nextProject
+                                                                            .state
+                                                                    ]
+                                                                }
+                                                            </span>
+                                                            {nextProject.githubRepo &&
+                                                                user?.githubUsername && (
+                                                                    <a
+                                                                        href={constructGithubUrl(
+                                                                            user.githubUsername,
+                                                                            nextProject.githubRepo
+                                                                        )}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-primary"
+                                                                    >
+                                                                        GitHub →
+                                                                    </a>
+                                                                )}
+                                                        </div>
+                                                        {nextProject.topics &&
+                                                            nextProject.topics
+                                                                .length > 0 && (
+                                                                <div
+                                                                    className="flex"
+                                                                    style={{
+                                                                        gap: "0.25rem",
+                                                                        flexWrap:
+                                                                            "wrap",
+                                                                        marginTop:
+                                                                            "0.25rem",
+                                                                    }}
+                                                                >
+                                                                    {nextProject.topics
+                                                                        .slice(
+                                                                            0,
+                                                                            3
+                                                                        )
+                                                                        .map(
+                                                                            (
+                                                                                topic,
+                                                                                index
+                                                                            ) => (
+                                                                                <span
+                                                                                    key={
+                                                                                        index
+                                                                                    }
+                                                                                    style={{
+                                                                                        background:
+                                                                                            "var(--bg-primary)",
+                                                                                        padding:
+                                                                                            "0.125rem 0.25rem",
+                                                                                        borderRadius:
+                                                                                            "3px",
+                                                                                        fontSize:
+                                                                                            "0.7rem",
+                                                                                        color: "var(--text-secondary)",
+                                                                                    }}
+                                                                                >
+                                                                                    {
+                                                                                        topic
+                                                                                    }
+                                                                                </span>
+                                                                            )
+                                                                        )}
+                                                                    {nextProject
+                                                                        .topics
+                                                                        .length >
+                                                                        3 && (
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize:
+                                                                                    "0.7rem",
+                                                                                color: "var(--text-muted)",
+                                                                                fontStyle:
+                                                                                    "italic",
+                                                                            }}
+                                                                        >
+                                                                            +
+                                                                            {nextProject
+                                                                                .topics
+                                                                                .length -
+                                                                                3}{" "}
+                                                                            more
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                     </div>
                                                 ) : null;
                                             })()}

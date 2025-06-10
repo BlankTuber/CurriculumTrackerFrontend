@@ -1,5 +1,10 @@
 import React from "react";
 import { getLevelForStage } from "../utils/stageUtils";
+import {
+    PROJECT_STATE_LABELS,
+    PROJECT_STATE_COLORS,
+    isProjectCompleted,
+} from "../utils/projectUtils";
 
 const PrerequisiteSummary = ({
     prerequisites = [],
@@ -24,7 +29,9 @@ const PrerequisiteSummary = ({
         );
     }
 
-    const completedCount = prerequisites.filter((p) => p.completed).length;
+    const completedCount = prerequisites.filter((p) =>
+        isProjectCompleted(p)
+    ).length;
     const totalCount = prerequisites.length;
     const allCompleted = completedCount === totalCount;
 
@@ -90,11 +97,24 @@ const PrerequisiteSummary = ({
                                         style={{
                                             gap: "0.5rem",
                                             alignItems: "center",
+                                            marginBottom: "0.25rem",
+                                            flexWrap: "wrap",
                                         }}
                                     >
                                         <span style={{ fontWeight: "500" }}>
                                             {prerequisite.name}
                                         </span>
+                                        {prerequisite.identifier && (
+                                            <span
+                                                className="text-primary"
+                                                style={{
+                                                    fontSize: "0.8rem",
+                                                    fontWeight: "600",
+                                                }}
+                                            >
+                                                [{prerequisite.identifier}]
+                                            </span>
+                                        )}
                                         <span
                                             className="text-muted"
                                             style={{ fontSize: "0.8rem" }}
@@ -110,18 +130,60 @@ const PrerequisiteSummary = ({
                                             </span>
                                         )}
                                     </div>
+                                    {prerequisite.topics &&
+                                        prerequisite.topics.length > 0 && (
+                                            <div
+                                                className="flex"
+                                                style={{
+                                                    gap: "0.25rem",
+                                                    flexWrap: "wrap",
+                                                }}
+                                            >
+                                                {prerequisite.topics
+                                                    .slice(0, 3)
+                                                    .map((topic, index) => (
+                                                        <span
+                                                            key={index}
+                                                            style={{
+                                                                background:
+                                                                    "var(--bg-primary)",
+                                                                padding:
+                                                                    "0.125rem 0.25rem",
+                                                                borderRadius:
+                                                                    "3px",
+                                                                fontSize:
+                                                                    "0.7rem",
+                                                                color: "var(--text-secondary)",
+                                                            }}
+                                                        >
+                                                            {topic}
+                                                        </span>
+                                                    ))}
+                                                {prerequisite.topics.length >
+                                                    3 && (
+                                                    <span
+                                                        style={{
+                                                            fontSize: "0.7rem",
+                                                            color: "var(--text-muted)",
+                                                            fontStyle: "italic",
+                                                        }}
+                                                    >
+                                                        +
+                                                        {prerequisite.topics
+                                                            .length - 3}{" "}
+                                                        more
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                 </div>
                                 <span
                                     className={
-                                        prerequisite.completed
-                                            ? "text-success"
-                                            : "text-warning"
+                                        PROJECT_STATE_COLORS[prerequisite.state]
                                     }
                                     style={{ fontSize: "0.8rem" }}
                                 >
-                                    {prerequisite.completed
-                                        ? "✓ Done"
-                                        : "Pending"}
+                                    {PROJECT_STATE_LABELS[prerequisite.state]}
                                 </span>
                             </div>
                         );

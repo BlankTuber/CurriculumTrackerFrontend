@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { userAPI } from "../utils/api";
+import { validateGithubUsername } from "../utils/projectUtils";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import Notification from "../components/Notification";
@@ -15,24 +16,22 @@ const UserProfile = () => {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
-    // Update form state
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [updateLoading, setUpdateLoading] = useState(false);
     const [updateForm, setUpdateForm] = useState({
         username: "",
+        githubUsername: "",
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
     });
     const [updateError, setUpdateError] = useState("");
 
-    // Delete form state
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [deletePassword, setDeletePassword] = useState("");
     const [deleteError, setDeleteError] = useState("");
 
-    // Notification state
     const [notification, setNotification] = useState({
         isOpen: false,
         type: "info",
@@ -75,9 +74,14 @@ const UserProfile = () => {
     const handleUpdateSubmit = async (e) => {
         e.preventDefault();
 
-        // Validation
-        if (!updateForm.username && !updateForm.newPassword) {
-            setUpdateError("Please provide a new username or password");
+        if (
+            !updateForm.username &&
+            !updateForm.githubUsername &&
+            !updateForm.newPassword
+        ) {
+            setUpdateError(
+                "Please provide a new username, GitHub username, or password"
+            );
             return;
         }
 
@@ -116,6 +120,16 @@ const UserProfile = () => {
             }
         }
 
+        if (
+            updateForm.githubUsername &&
+            !validateGithubUsername(updateForm.githubUsername)
+        ) {
+            setUpdateError(
+                "GitHub username must be between 1-39 characters and contain only letters, numbers, and hyphens (cannot start/end with hyphen)"
+            );
+            return;
+        }
+
         setUpdateLoading(true);
         setUpdateError("");
 
@@ -124,6 +138,10 @@ const UserProfile = () => {
 
             if (updateForm.username && updateForm.username !== user.username) {
                 updateData.username = updateForm.username;
+            }
+
+            if (updateForm.githubUsername !== (user.githubUsername || "")) {
+                updateData.githubUsername = updateForm.githubUsername || null;
             }
 
             if (updateForm.newPassword) {
@@ -138,6 +156,7 @@ const UserProfile = () => {
                 setShowUpdateModal(false);
                 setUpdateForm({
                     username: "",
+                    githubUsername: "",
                     currentPassword: "",
                     newPassword: "",
                     confirmPassword: "",
@@ -178,7 +197,6 @@ const UserProfile = () => {
                     "Your account has been successfully deleted.",
                     false
                 );
-                // Close modal and logout after a short delay
                 setShowDeleteModal(false);
                 setTimeout(() => {
                     logout();
@@ -197,6 +215,7 @@ const UserProfile = () => {
     const openUpdateModal = () => {
         setUpdateForm({
             username: user?.username || "",
+            githubUsername: user?.githubUsername || "",
             currentPassword: "",
             newPassword: "",
             confirmPassword: "",
@@ -239,7 +258,6 @@ const UserProfile = () => {
             {success && <div className="success-message mb-2">{success}</div>}
 
             <div className="grid grid-2">
-                {/* Profile Information */}
                 <div className="card">
                     <div className="card-header">
                         <h2 className="card-title">Profile Information</h2>
@@ -249,6 +267,10 @@ const UserProfile = () => {
                         <div className="flex-between mb-1">
                             <span className="text-muted">Username:</span>
                             <span>{user?.username}</span>
+                        </div>
+                        <div className="flex-between mb-1">
+                            <span className="text-muted">GitHub Username:</span>
+                            <span>{user?.githubUsername || "Not set"}</span>
                         </div>
                         <div className="flex-between mb-1">
                             <span className="text-muted">Member since:</span>
@@ -276,7 +298,6 @@ const UserProfile = () => {
                     </button>
                 </div>
 
-                {/* Statistics */}
                 <div className="card">
                     <div className="card-header">
                         <h2 className="card-title">Statistics</h2>
@@ -299,7 +320,6 @@ const UserProfile = () => {
                 </div>
             </div>
 
-            {/* Danger Zone */}
             <div
                 className="card mt-2"
                 style={{ borderColor: "var(--accent-error)" }}
@@ -317,7 +337,6 @@ const UserProfile = () => {
                 </button>
             </div>
 
-            {/* Update Profile Modal */}
             <Modal
                 isOpen={showUpdateModal}
                 onClose={() => setShowUpdateModal(false)}
@@ -348,6 +367,35 @@ const UserProfile = () => {
                             disabled={updateLoading}
                             placeholder="Leave blank to keep current username"
                         />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label" htmlFor="githubUsername">
+                            GitHub Username (optional)
+                        </label>
+                        <input
+                            type="text"
+                            id="githubUsername"
+                            name="githubUsername"
+                            value={updateForm.githubUsername}
+                            onChange={(e) =>
+                                setUpdateForm((prev) => ({
+                                    ...prev,
+                                    githubUsername: e.target.value,
+                                }))
+                            }
+                            className="form-input"
+                            maxLength={39}
+                            disabled={updateLoading}
+                            placeholder="your-github-username"
+                        />
+                        <p
+                            className="text-muted"
+                            style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                        >
+                            Used to automatically generate GitHub links for your
+                            projects. Leave blank to remove.
+                        </p>
                     </div>
 
                     <div className="form-group">
@@ -437,7 +485,6 @@ const UserProfile = () => {
                 </form>
             </Modal>
 
-            {/* Delete Account Modal */}
             <Modal
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
@@ -499,7 +546,6 @@ const UserProfile = () => {
                 </form>
             </Modal>
 
-            {/* Notification */}
             <Notification
                 isOpen={notification.isOpen}
                 onClose={closeNotification}

@@ -1,5 +1,6 @@
 import React from "react";
 import { getUniqueStages, sortLevelsByOrder } from "../utils/stageUtils";
+import { PROJECT_STATE_LABELS } from "../utils/projectUtils";
 
 const ProjectFilter = ({
     projects = [],
@@ -8,9 +9,9 @@ const ProjectFilter = ({
     levelFilter,
     onStageChange,
     onLevelChange,
-    showCompletionFilter = false,
-    completionFilter,
-    onCompletionChange,
+    showStateFilter = false,
+    stateFilter,
+    onStateChange,
 }) => {
     const uniqueStages = getUniqueStages(projects);
     const sortedLevels = sortLevelsByOrder(levels);
@@ -37,7 +38,7 @@ const ProjectFilter = ({
                 <h3 className="card-title">Filter Projects</h3>
             </div>
 
-            <div className="grid grid-3">
+            <div className={showStateFilter ? "grid grid-3" : "grid grid-2"}>
                 <div>
                     <label className="form-label">Filter by Stage</label>
                     <select
@@ -71,23 +72,28 @@ const ProjectFilter = ({
                     </select>
                 </div>
 
-                {showCompletionFilter && (
+                {showStateFilter && (
                     <div>
-                        <label className="form-label">Filter by Status</label>
+                        <label className="form-label">Filter by State</label>
                         <select
-                            value={completionFilter}
-                            onChange={(e) => onCompletionChange(e.target.value)}
+                            value={stateFilter}
+                            onChange={(e) => onStateChange(e.target.value)}
                             className="form-select"
                         >
-                            <option value="">All Projects</option>
-                            <option value="completed">Completed</option>
-                            <option value="incomplete">In Progress</option>
+                            <option value="">All States</option>
+                            {Object.entries(PROJECT_STATE_LABELS).map(
+                                ([value, label]) => (
+                                    <option key={value} value={value}>
+                                        {label}
+                                    </option>
+                                )
+                            )}
                         </select>
                     </div>
                 )}
             </div>
 
-            {(stageFilter || levelFilter || completionFilter) && (
+            {(stageFilter || levelFilter || stateFilter) && (
                 <div className="flex-between mt-1">
                     <span className="text-muted">
                         {stageFilter && `Showing Stage ${stageFilter}`}
@@ -96,18 +102,14 @@ const ProjectFilter = ({
                                 sortedLevels.find((l) => l._id === levelFilter)
                                     ?.name || "Selected Level"
                             }`}
-                        {completionFilter &&
-                            ` • ${
-                                completionFilter === "completed"
-                                    ? "Completed"
-                                    : "In Progress"
-                            } only`}
+                        {stateFilter &&
+                            ` • ${PROJECT_STATE_LABELS[stateFilter]} only`}
                     </span>
                     <button
                         onClick={() => {
                             onStageChange("");
                             onLevelChange("");
-                            if (onCompletionChange) onCompletionChange("");
+                            if (onStateChange) onStateChange("");
                         }}
                         className="btn btn-secondary btn-small"
                     >

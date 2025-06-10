@@ -4,8 +4,10 @@ import { getLevelForStage } from "../utils/stageUtils";
 const StageLevelBadge = ({
     stage,
     order = null,
+    identifier = null,
     levels = [],
     showLevel = true,
+    showIdentifier = true,
     size = "normal",
     className = "",
 }) => {
@@ -22,8 +24,16 @@ const StageLevelBadge = ({
     return (
         <div
             className={`flex ${className}`}
-            style={{ gap: "0.5rem", alignItems: "center" }}
+            style={{ gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}
         >
+            {showIdentifier && identifier && (
+                <span
+                    className={`text-primary ${textSize}`}
+                    style={{ fontWeight: "600" }}
+                >
+                    [{identifier}]
+                </span>
+            )}
             <span className={`text-muted ${textSize}`}>
                 Stage {stage}
                 {order && ` #${order}`}
