@@ -20,6 +20,8 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
     });
 
     const [existingLevels, setExistingLevels] = useState([]);
+    const [levelsLoaded, setLevelsLoaded] = useState(false);
+    const [defaultsSet, setDefaultsSet] = useState(isEditing);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -28,7 +30,7 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
     }, [curriculumId]);
 
     useEffect(() => {
-        if (!isEditing && existingLevels.length >= 0 && !formData.stageStart) {
+        if (!isEditing && !defaultsSet && levelsLoaded) {
             const defaultStageRange =
                 getNextAvailableStageRange(existingLevels);
             const defaultOrder = getNextAvailableLevelOrder(existingLevels);
@@ -39,8 +41,9 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                 stageEnd: defaultStageRange.stageEnd.toString(),
                 order: defaultOrder.toString(),
             }));
+            setDefaultsSet(true);
         }
-    }, [existingLevels, isEditing, formData.stageStart]);
+    }, [existingLevels, isEditing, defaultsSet, levelsLoaded]);
 
     const fetchCurriculumLevels = async () => {
         try {
@@ -48,11 +51,20 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
             setExistingLevels(data.curriculum.levels || []);
         } catch (error) {
             console.error("Failed to fetch curriculum levels:", error);
+        } finally {
+            setLevelsLoaded(true);
         }
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+
+        if (name === "order") {
+            if (value && isOrderInUse(value)) {
+                return;
+            }
+        }
+
         setFormData((prev) => ({
             ...prev,
             [name]: value,
@@ -61,18 +73,41 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
 
     const handleStageStartChange = (e) => {
         const stageStart = e.target.value;
+
         setFormData((prev) => {
             const newData = { ...prev, stageStart };
 
             if (!isEditing && stageStart) {
                 const startNum = parseInt(stageStart);
                 if (!isNaN(startNum)) {
-                    newData.stageEnd = (startNum + 4).toString();
+                    const newStageEnd = startNum + 4;
+                    if (
+                        !isStageRangeInUse(stageStart, newStageEnd.toString())
+                    ) {
+                        newData.stageEnd = newStageEnd.toString();
+                    }
                 }
             }
 
             return newData;
         });
+    };
+
+    const handleStageEndChange = (e) => {
+        const stageEnd = e.target.value;
+
+        if (
+            stageEnd &&
+            formData.stageStart &&
+            isStageRangeInUse(formData.stageStart, stageEnd)
+        ) {
+            return;
+        }
+
+        setFormData((prev) => ({
+            ...prev,
+            stageEnd: stageEnd,
+        }));
     };
 
     const getDynamicSuggestedOrder = () => {
@@ -91,6 +126,64 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
             .map((l) => l.order)
             .filter((order) => order != null)
             .sort((a, b) => a - b);
+    };
+
+    const formatOrderRanges = (orders) => {
+        if (orders.length === 0) return "";
+
+        const ranges = [];
+        let start = orders[0];
+        let end = orders[0];
+
+        for (let i = 1; i < orders.length; i++) {
+            if (orders[i] === end + 1) {
+                end = orders[i];
+            } else {
+                if (start === end) {
+                    ranges.push(start.toString());
+                } else {
+                    ranges.push(`${start}-${end}`);
+                }
+                start = orders[i];
+                end = orders[i];
+            }
+        }
+
+        if (start === end) {
+            ranges.push(start.toString());
+        } else {
+            ranges.push(`${start}-${end}`);
+        }
+
+        return ranges.join(", ");
+    };
+
+    const isOrderInUse = (order) => {
+        const usedOrders = getDynamicUsedOrders();
+        return usedOrders.includes(parseInt(order));
+    };
+
+    const isStageRangeInUse = (stageStart, stageEnd) => {
+        if (!stageStart || !stageEnd) return false;
+
+        const start = parseInt(stageStart);
+        const end = parseInt(stageEnd);
+
+        if (isNaN(start) || isNaN(end)) return false;
+
+        const filteredLevels = isEditing
+            ? existingLevels.filter((l) => l._id !== level._id)
+            : existingLevels;
+
+        for (const level of filteredLevels) {
+            const hasOverlap = !(
+                end < level.stageStart || start > level.stageEnd
+            );
+            if (hasOverlap) {
+                return true;
+            }
+        }
+        return false;
     };
 
     const getLevelNamePlaceholder = () => {
@@ -220,7 +313,8 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
 
     const existingRanges = getExistingRangesInfo();
     const usedOrders = getDynamicUsedOrders();
-    const nextRange = getNextAvailableStageRange(existingLevels);
+    const nextRange = getNextAvailableStageRange(existingLevels, 5);
+    const suggestedOrder = getDynamicSuggestedOrder();
 
     return (
         <form onSubmit={handleSubmit}>
@@ -255,20 +349,25 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                         name="order"
                         value={formData.order}
                         onChange={handleChange}
-                        className="form-input"
+                        className={`form-input ${
+                            formData.order && isOrderInUse(formData.order)
+                                ? "error-input"
+                                : ""
+                        }`}
                         min="1"
                         required
                         disabled={loading}
-                        placeholder={
-                            !isEditing
-                                ? `Default: ${getDynamicSuggestedOrder()}`
-                                : "1"
-                        }
+                        placeholder={suggestedOrder.toString()}
                     />
                     <div style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}>
+                        {formData.order && isOrderInUse(formData.order) && (
+                            <p className="text-error">
+                                Order {formData.order} is already in use
+                            </p>
+                        )}
                         {usedOrders.length > 0 ? (
                             <p className="text-muted">
-                                Used orders: {usedOrders.join(", ")}
+                                Used orders: {formatOrderRanges(usedOrders)}
                             </p>
                         ) : (
                             <p className="text-muted">
@@ -311,7 +410,16 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                         name="stageStart"
                         value={formData.stageStart}
                         onChange={handleStageStartChange}
-                        className="form-input"
+                        className={`form-input ${
+                            formData.stageStart &&
+                            formData.stageEnd &&
+                            isStageRangeInUse(
+                                formData.stageStart,
+                                formData.stageEnd
+                            )
+                                ? "error-input"
+                                : ""
+                        }`}
                         min="1"
                         required
                         disabled={loading}
@@ -326,6 +434,24 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                             {parseInt(formData.stageStart) + 4} (5-stage range)
                         </p>
                     )}
+                    {formData.stageStart &&
+                        formData.stageEnd &&
+                        isStageRangeInUse(
+                            formData.stageStart,
+                            formData.stageEnd
+                        ) && (
+                            <p
+                                className="text-error"
+                                style={{
+                                    fontSize: "0.8rem",
+                                    marginTop: "0.25rem",
+                                }}
+                            >
+                                Stage range {formData.stageStart}-
+                                {formData.stageEnd} overlaps with existing
+                                levels
+                            </p>
+                        )}
                 </div>
 
                 <div className="form-group">
@@ -337,16 +463,21 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                         id="stageEnd"
                         name="stageEnd"
                         value={formData.stageEnd}
-                        onChange={handleChange}
-                        className="form-input"
+                        onChange={handleStageEndChange}
+                        className={`form-input ${
+                            formData.stageStart &&
+                            formData.stageEnd &&
+                            isStageRangeInUse(
+                                formData.stageStart,
+                                formData.stageEnd
+                            )
+                                ? "error-input"
+                                : ""
+                        }`}
                         min={formData.stageStart || "1"}
                         required
                         disabled={loading}
-                        placeholder={
-                            formData.stageStart
-                                ? `Auto: ${parseInt(formData.stageStart) + 4}`
-                                : nextRange.stageEnd.toString()
-                        }
+                        placeholder={nextRange.stageEnd.toString()}
                     />
                 </div>
             </div>
