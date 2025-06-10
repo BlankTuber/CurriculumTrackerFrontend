@@ -85,94 +85,91 @@ const PrerequisiteSelector = ({
 
     if (availableProjects.length === 0) {
         return (
-            <div className="text-center text-muted" style={{ padding: "2rem" }}>
+            <div
+                className="text-center text-muted text-sm"
+                style={{ padding: "1rem" }}
+            >
                 No other projects available in this curriculum
             </div>
         );
     }
 
     return (
-        <div>
-            <div className="mb-2">
+        <div className="form-compact">
+            <div className="form-group">
+                <input
+                    type="text"
+                    placeholder="Search by name, description, identifier, or topics..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="form-input"
+                    disabled={disabled}
+                />
+            </div>
+
+            <div className="grid grid-3">
                 <div className="form-group">
-                    <input
-                        type="text"
-                        placeholder="Search by name, description, identifier, or topics..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="form-input"
+                    <select
+                        value={stageFilter}
+                        onChange={(e) => setStageFilter(e.target.value)}
+                        className="form-select"
                         disabled={disabled}
-                    />
+                    >
+                        <option value="">All Stages</option>
+                        {uniqueStages.map((stage) => (
+                            <option key={stage} value={stage}>
+                                Stage {stage}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
-                <div className="grid grid-2">
-                    <div className="form-group">
-                        <select
-                            value={stageFilter}
-                            onChange={(e) => setStageFilter(e.target.value)}
-                            className="form-select"
-                            disabled={disabled}
-                        >
-                            <option value="">All Stages</option>
-                            {uniqueStages.map((stage) => (
-                                <option key={stage} value={stage}>
-                                    Stage {stage}
+                <div className="form-group">
+                    <select
+                        value={stateFilter}
+                        onChange={(e) => setStateFilter(e.target.value)}
+                        className="form-select"
+                        disabled={disabled}
+                    >
+                        <option value="">All States</option>
+                        {Object.entries(PROJECT_STATE_LABELS).map(
+                            ([value, label]) => (
+                                <option key={value} value={value}>
+                                    {label}
                                 </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <select
-                            value={stateFilter}
-                            onChange={(e) => setStateFilter(e.target.value)}
-                            className="form-select"
-                            disabled={disabled}
-                        >
-                            <option value="">All States</option>
-                            {Object.entries(PROJECT_STATE_LABELS).map(
-                                ([value, label]) => (
-                                    <option key={value} value={value}>
-                                        {label}
-                                    </option>
-                                )
-                            )}
-                        </select>
-                    </div>
+                            )
+                        )}
+                    </select>
                 </div>
 
-                {(searchTerm || stageFilter || stateFilter) && (
-                    <div className="flex-between">
-                        <span
-                            className="text-muted"
-                            style={{ fontSize: "0.9rem" }}
-                        >
-                            Showing {filteredAndSortedProjects.length} of{" "}
-                            {availableProjects.length} projects
-                        </span>
+                <div className="form-group">
+                    {(searchTerm || stageFilter || stateFilter) && (
                         <button
                             type="button"
                             onClick={clearFilters}
                             className="btn btn-secondary btn-small"
                             disabled={disabled}
+                            style={{ width: "100%" }}
                         >
                             Clear Filters
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
-            <div
-                style={{
-                    maxHeight: "300px",
-                    overflowY: "auto",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "6px",
-                    padding: "1rem",
-                }}
-            >
+            {(searchTerm || stageFilter || stateFilter) && (
+                <div
+                    className="text-muted text-xs text-center"
+                    style={{ marginBottom: "0.5rem" }}
+                >
+                    Showing {filteredAndSortedProjects.length} of{" "}
+                    {availableProjects.length} projects
+                </div>
+            )}
+
+            <div className="scrollable-list" style={{ maxHeight: "400px" }}>
                 {Object.keys(groupedProjects).length === 0 ? (
-                    <div className="text-center text-muted">
+                    <div className="text-center text-muted text-sm">
                         No projects match your filters
                     </div>
                 ) : (
@@ -184,7 +181,10 @@ const PrerequisiteSelector = ({
                                 parseInt(stage)
                             );
                             return (
-                                <div key={stage} className="mb-2">
+                                <div
+                                    key={stage}
+                                    style={{ marginBottom: "1rem" }}
+                                >
                                     <div
                                         className="flex"
                                         style={{
@@ -195,24 +195,24 @@ const PrerequisiteSelector = ({
                                     >
                                         <h4
                                             style={{
-                                                fontSize: "1rem",
+                                                fontSize: "0.9rem",
                                                 margin: 0,
                                             }}
                                         >
                                             Stage {stage}
                                         </h4>
                                         {level && (
-                                            <span
-                                                className="text-primary"
-                                                style={{ fontSize: "0.9rem" }}
-                                            >
+                                            <span className="text-primary text-xs">
                                                 ({level.name})
                                             </span>
                                         )}
                                     </div>
 
                                     {projects.map((project) => (
-                                        <div key={project._id} className="mb-1">
+                                        <div
+                                            key={project._id}
+                                            style={{ marginBottom: "0.5rem" }}
+                                        >
                                             <div
                                                 className={`selection-card ${
                                                     selectedPrerequisites.includes(
@@ -229,6 +229,7 @@ const PrerequisiteSelector = ({
                                                         project._id
                                                     )
                                                 }
+                                                style={{ padding: "0.5rem" }}
                                             >
                                                 <div style={{ flex: 1 }}>
                                                     <div
@@ -246,6 +247,8 @@ const PrerequisiteSelector = ({
                                                             style={{
                                                                 fontWeight:
                                                                     "500",
+                                                                fontSize:
+                                                                    "0.9rem",
                                                             }}
                                                         >
                                                             {project.name}
@@ -255,7 +258,7 @@ const PrerequisiteSelector = ({
                                                                 className="text-primary"
                                                                 style={{
                                                                     fontSize:
-                                                                        "0.8rem",
+                                                                        "0.75rem",
                                                                     fontWeight:
                                                                         "600",
                                                                 }}
@@ -272,7 +275,7 @@ const PrerequisiteSelector = ({
                                                                 className="text-muted"
                                                                 style={{
                                                                     fontSize:
-                                                                        "0.8rem",
+                                                                        "0.75rem",
                                                                 }}
                                                             >
                                                                 #{project.order}
@@ -287,7 +290,7 @@ const PrerequisiteSelector = ({
                                                             }
                                                             style={{
                                                                 fontSize:
-                                                                    "0.8rem",
+                                                                    "0.75rem",
                                                             }}
                                                         >
                                                             {
@@ -304,7 +307,7 @@ const PrerequisiteSelector = ({
                                                                 className="text-success"
                                                                 style={{
                                                                     fontSize:
-                                                                        "0.9rem",
+                                                                        "0.8rem",
                                                                     marginLeft:
                                                                         "auto",
                                                                 }}
@@ -316,11 +319,9 @@ const PrerequisiteSelector = ({
                                                     <p
                                                         className="text-muted"
                                                         style={{
-                                                            fontSize: "0.85rem",
-                                                            margin: 0,
+                                                            fontSize: "0.8rem",
+                                                            margin: "0 0 0.25rem 0",
                                                             lineHeight: "1.3",
-                                                            marginBottom:
-                                                                "0.25rem",
                                                         }}
                                                     >
                                                         {project.description}
@@ -336,39 +337,61 @@ const PrerequisiteSelector = ({
                                                                         "wrap",
                                                                 }}
                                                             >
-                                                                {project.topics.map(
-                                                                    (
-                                                                        topic,
-                                                                        index
-                                                                    ) => (
-                                                                        <span
-                                                                            key={
-                                                                                index
-                                                                            }
-                                                                            style={{
-                                                                                background:
-                                                                                    "var(--bg-primary)",
-                                                                                padding:
-                                                                                    "0.125rem 0.25rem",
-                                                                                borderRadius:
-                                                                                    "3px",
-                                                                                fontSize:
-                                                                                    "0.7rem",
-                                                                                color: "var(--text-secondary)",
-                                                                            }}
-                                                                        >
-                                                                            {
-                                                                                topic
-                                                                            }
-                                                                        </span>
-                                                                    )
+                                                                {project.topics
+                                                                    .slice(0, 3)
+                                                                    .map(
+                                                                        (
+                                                                            topic,
+                                                                            index
+                                                                        ) => (
+                                                                            <span
+                                                                                key={
+                                                                                    index
+                                                                                }
+                                                                                style={{
+                                                                                    background:
+                                                                                        "var(--bg-primary)",
+                                                                                    padding:
+                                                                                        "0.125rem 0.25rem",
+                                                                                    borderRadius:
+                                                                                        "3px",
+                                                                                    fontSize:
+                                                                                        "0.65rem",
+                                                                                    color: "var(--text-secondary)",
+                                                                                }}
+                                                                            >
+                                                                                {
+                                                                                    topic
+                                                                                }
+                                                                            </span>
+                                                                        )
+                                                                    )}
+                                                                {project.topics
+                                                                    .length >
+                                                                    3 && (
+                                                                    <span
+                                                                        style={{
+                                                                            fontSize:
+                                                                                "0.65rem",
+                                                                            color: "var(--text-muted)",
+                                                                            fontStyle:
+                                                                                "italic",
+                                                                        }}
+                                                                    >
+                                                                        +
+                                                                        {project
+                                                                            .topics
+                                                                            .length -
+                                                                            3}{" "}
+                                                                        more
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         )}
                                                     <div
                                                         style={{
                                                             marginTop: "0.5rem",
-                                                            fontSize: "0.8rem",
+                                                            fontSize: "0.75rem",
                                                         }}
                                                     >
                                                         <Link
@@ -392,11 +415,12 @@ const PrerequisiteSelector = ({
             </div>
 
             {selectedPrerequisites.length > 0 && (
-                <div className="mt-1">
-                    <p className="text-muted" style={{ fontSize: "0.9rem" }}>
-                        Selected {selectedPrerequisites.length} prerequisite
-                        {selectedPrerequisites.length === 1 ? "" : "s"}
-                    </p>
+                <div
+                    className="text-muted text-sm text-center"
+                    style={{ marginTop: "0.5rem" }}
+                >
+                    Selected {selectedPrerequisites.length} prerequisite
+                    {selectedPrerequisites.length === 1 ? "" : "s"}
                 </div>
             )}
         </div>

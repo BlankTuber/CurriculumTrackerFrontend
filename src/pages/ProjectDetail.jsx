@@ -292,13 +292,13 @@ const ProjectDetail = () => {
 
     return (
         <div>
-            <div className="flex-between mb-2">
+            <div className="flex-between mb-1">
                 <div>
                     <Link
                         to={`/curriculum/${
                             originalCurriculum?._id || project.curriculum?._id
                         }`}
-                        className="text-muted"
+                        className="text-muted text-sm"
                         style={{ textDecoration: "none" }}
                     >
                         ← Back to{" "}
@@ -308,8 +308,8 @@ const ProjectDetail = () => {
                         className="flex"
                         style={{
                             alignItems: "center",
-                            gap: "1rem",
-                            marginTop: "0.5rem",
+                            gap: "0.75rem",
+                            marginTop: "0.25rem",
                             flexWrap: "wrap",
                         }}
                     >
@@ -318,7 +318,7 @@ const ProjectDetail = () => {
                             <span
                                 className="text-primary"
                                 style={{
-                                    fontSize: "1.25rem",
+                                    fontSize: "1.1rem",
                                     fontWeight: "600",
                                 }}
                             >
@@ -327,29 +327,31 @@ const ProjectDetail = () => {
                         )}
                         <span
                             className={PROJECT_STATE_COLORS[project.state]}
-                            style={{
-                                fontSize: "1.1rem",
-                                fontWeight: "500",
-                            }}
+                            style={{ fontSize: "0.9rem", fontWeight: "500" }}
                         >
                             {PROJECT_STATE_LABELS[project.state]}
                         </span>
                     </div>
-                    <p className="text-muted">{project.description}</p>
+                    <p
+                        className="text-muted text-sm"
+                        style={{ marginTop: "0.25rem" }}
+                    >
+                        {project.description}
+                    </p>
                     <div
                         className="flex"
                         style={{
-                            gap: "1rem",
-                            marginTop: "0.5rem",
+                            gap: "0.75rem",
+                            marginTop: "0.25rem",
                             flexWrap: "wrap",
                         }}
                     >
-                        <span className="text-muted">
+                        <span className="text-muted text-sm">
                             Stage {project.stage}
                             {project.order && ` #${project.order}`}
                         </span>
                         {projectLevel && (
-                            <span className="text-primary">
+                            <span className="text-primary text-sm">
                                 Level: {projectLevel.name}
                             </span>
                         )}
@@ -358,7 +360,7 @@ const ProjectDetail = () => {
                                 href={githubUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-primary"
+                                className="text-primary text-sm"
                             >
                                 View on GitHub →
                             </a>
@@ -379,8 +381,8 @@ const ProjectDetail = () => {
                                     style={{
                                         background: "var(--bg-tertiary)",
                                         padding: "0.25rem 0.5rem",
-                                        borderRadius: "4px",
-                                        fontSize: "0.8rem",
+                                        borderRadius: "3px",
+                                        fontSize: "0.75rem",
                                         color: "var(--text-secondary)",
                                     }}
                                 >
@@ -398,10 +400,7 @@ const ProjectDetail = () => {
                         }
                         className="form-select"
                         disabled={stateUpdateLoading}
-                        style={{
-                            width: "auto",
-                            minWidth: "150px",
-                        }}
+                        style={{ width: "auto", minWidth: "130px" }}
                     >
                         {Object.entries(PROJECT_STATE_LABELS).map(
                             ([value, label]) => (
@@ -415,148 +414,142 @@ const ProjectDetail = () => {
                         onClick={() => setShowEditModal(true)}
                         className="btn btn-secondary btn-small"
                     >
-                        Edit Project
+                        Edit
                     </button>
                 </div>
             </div>
 
             {project.prerequisites && project.prerequisites.length > 0 && (
-                <div className="card mb-2">
+                <div className="card mb-1">
                     <div className="card-header">
                         <div className="flex-between">
-                            <h2 className="card-title">Prerequisites</h2>
+                            <h2 className="card-title">
+                                Prerequisites ({project.prerequisites.length})
+                            </h2>
                             <button
                                 onClick={() => setShowPrerequisiteModal(true)}
                                 className="btn btn-secondary btn-small"
                             >
-                                Manage Prerequisites
+                                Manage
                             </button>
                         </div>
                     </div>
-                    <div className="list">
-                        {project.prerequisites.map((prerequisite) => (
-                            <div key={prerequisite._id} className="list-item">
-                                <div style={{ flex: 1 }}>
-                                    <div
-                                        className="flex"
-                                        style={{
-                                            gap: "0.5rem",
-                                            alignItems: "center",
-                                            marginBottom: "0.25rem",
-                                            flexWrap: "wrap",
-                                        }}
-                                    >
-                                        <Link
-                                            to={`/project/${prerequisite._id}`}
+                    <div className="scrollable-list">
+                        <div className="compact-list">
+                            {project.prerequisites.map((prerequisite) => (
+                                <div
+                                    key={prerequisite._id}
+                                    className="compact-item"
+                                >
+                                    <div style={{ flex: 1 }}>
+                                        <div
+                                            className="flex"
                                             style={{
-                                                textDecoration: "none",
-                                                color: "inherit",
+                                                gap: "0.5rem",
+                                                alignItems: "center",
+                                                marginBottom: "0.25rem",
+                                                flexWrap: "wrap",
                                             }}
                                         >
-                                            <h4>{prerequisite.name}</h4>
-                                        </Link>
-                                        {prerequisite.identifier && (
-                                            <span
-                                                className="text-primary"
+                                            <Link
+                                                to={`/project/${prerequisite._id}`}
                                                 style={{
+                                                    textDecoration: "none",
+                                                    color: "inherit",
                                                     fontSize: "0.9rem",
-                                                    fontWeight: "600",
+                                                    fontWeight: "500",
                                                 }}
                                             >
-                                                [{prerequisite.identifier}]
+                                                {prerequisite.name}
+                                            </Link>
+                                            {prerequisite.identifier && (
+                                                <span
+                                                    className="text-primary"
+                                                    style={{
+                                                        fontSize: "0.75rem",
+                                                        fontWeight: "600",
+                                                    }}
+                                                >
+                                                    [{prerequisite.identifier}]
+                                                </span>
+                                            )}
+                                            <span className="text-muted text-xs">
+                                                Stage {prerequisite.stage}
                                             </span>
-                                        )}
-                                        <span
-                                            className={
-                                                PROJECT_STATE_COLORS[
-                                                    prerequisite.state
-                                                ]
-                                            }
-                                            style={{ fontSize: "0.9rem" }}
-                                        >
-                                            {
-                                                PROJECT_STATE_LABELS[
-                                                    prerequisite.state
-                                                ]
-                                            }
-                                        </span>
-                                    </div>
-                                    <p
-                                        className="text-muted"
-                                        style={{ fontSize: "0.9rem" }}
-                                    >
-                                        {prerequisite.description}
-                                    </p>
-                                    <div
-                                        className="flex"
-                                        style={{
-                                            gap: "1rem",
-                                            alignItems: "center",
-                                        }}
-                                    >
-                                        <span
-                                            className="text-muted"
-                                            style={{ fontSize: "0.8rem" }}
-                                        >
-                                            Stage {prerequisite.stage}
-                                        </span>
-                                    </div>
-                                    {prerequisite.topics &&
-                                        prerequisite.topics.length > 0 && (
-                                            <div
-                                                className="flex"
-                                                style={{
-                                                    gap: "0.25rem",
-                                                    flexWrap: "wrap",
-                                                    marginTop: "0.25rem",
-                                                }}
+                                            <span
+                                                className={
+                                                    PROJECT_STATE_COLORS[
+                                                        prerequisite.state
+                                                    ]
+                                                }
+                                                style={{ fontSize: "0.75rem" }}
                                             >
-                                                {prerequisite.topics
-                                                    .slice(0, 3)
-                                                    .map((topic, index) => (
+                                                {
+                                                    PROJECT_STATE_LABELS[
+                                                        prerequisite.state
+                                                    ]
+                                                }
+                                            </span>
+                                        </div>
+                                        {prerequisite.topics &&
+                                            prerequisite.topics.length > 0 && (
+                                                <div
+                                                    className="flex"
+                                                    style={{
+                                                        gap: "0.25rem",
+                                                        flexWrap: "wrap",
+                                                    }}
+                                                >
+                                                    {prerequisite.topics
+                                                        .slice(0, 3)
+                                                        .map((topic, index) => (
+                                                            <span
+                                                                key={index}
+                                                                style={{
+                                                                    background:
+                                                                        "var(--bg-primary)",
+                                                                    padding:
+                                                                        "0.125rem 0.25rem",
+                                                                    borderRadius:
+                                                                        "3px",
+                                                                    fontSize:
+                                                                        "0.65rem",
+                                                                    color: "var(--text-secondary)",
+                                                                }}
+                                                            >
+                                                                {topic}
+                                                            </span>
+                                                        ))}
+                                                    {prerequisite.topics
+                                                        .length > 3 && (
                                                         <span
-                                                            key={index}
+                                                            className="text-muted"
                                                             style={{
-                                                                background:
-                                                                    "var(--bg-primary)",
-                                                                padding:
-                                                                    "0.125rem 0.25rem",
-                                                                borderRadius:
-                                                                    "3px",
                                                                 fontSize:
-                                                                    "0.7rem",
-                                                                color: "var(--text-secondary)",
+                                                                    "0.65rem",
+                                                                fontStyle:
+                                                                    "italic",
                                                             }}
                                                         >
-                                                            {topic}
+                                                            +
+                                                            {prerequisite.topics
+                                                                .length -
+                                                                3}{" "}
+                                                            more
                                                         </span>
-                                                    ))}
-                                                {prerequisite.topics.length >
-                                                    3 && (
-                                                    <span
-                                                        style={{
-                                                            fontSize: "0.7rem",
-                                                            color: "var(--text-muted)",
-                                                            fontStyle: "italic",
-                                                        }}
-                                                    >
-                                                        +
-                                                        {prerequisite.topics
-                                                            .length - 3}{" "}
-                                                        more
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
+                                                    )}
+                                                </div>
+                                            )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
 
             {(!project.prerequisites || project.prerequisites.length === 0) && (
-                <div className="card mb-2">
+                <div className="card mb-1">
                     <div className="card-header">
                         <div className="flex-between">
                             <h2 className="card-title">Prerequisites</h2>
@@ -568,7 +561,7 @@ const ProjectDetail = () => {
                             </button>
                         </div>
                     </div>
-                    <p className="text-muted text-center">
+                    <p className="text-muted text-center text-sm">
                         No prerequisites set for this project
                     </p>
                 </div>
@@ -578,7 +571,10 @@ const ProjectDetail = () => {
                 <div className="card">
                     <div className="card-header">
                         <div className="flex-between">
-                            <h2 className="card-title">Project Resources</h2>
+                            <h2 className="card-title">
+                                Resources (
+                                {project.projectResources?.length || 0})
+                            </h2>
                             <button
                                 onClick={() => setShowResourceModal(true)}
                                 className="btn btn-primary btn-small"
@@ -590,40 +586,64 @@ const ProjectDetail = () => {
 
                     {project.projectResources &&
                     project.projectResources.length > 0 ? (
-                        <div className="list">
-                            {project.projectResources.map((resource) => (
-                                <div key={resource._id} className="list-item">
-                                    <div style={{ flex: 1 }}>
-                                        <h4>{resource.name}</h4>
-                                        <p className="text-muted">
-                                            {resource.type
-                                                .charAt(0)
-                                                .toUpperCase() +
-                                                resource.type.slice(1)}
-                                        </p>
-                                        <a
-                                            href={resource.link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-primary"
-                                            style={{ fontSize: "0.9rem" }}
-                                        >
-                                            {resource.link}
-                                        </a>
-                                    </div>
-                                    <button
-                                        onClick={() =>
-                                            handleDeleteResourceClick(resource)
-                                        }
-                                        className="btn btn-danger btn-small"
+                        <div className="scrollable-list">
+                            <div className="compact-list">
+                                {project.projectResources.map((resource) => (
+                                    <div
+                                        key={resource._id}
+                                        className="compact-item"
                                     >
-                                        Delete
-                                    </button>
-                                </div>
-                            ))}
+                                        <div style={{ flex: 1 }}>
+                                            <div
+                                                className="flex"
+                                                style={{
+                                                    gap: "0.5rem",
+                                                    alignItems: "center",
+                                                }}
+                                            >
+                                                <strong
+                                                    style={{
+                                                        fontSize: "0.9rem",
+                                                    }}
+                                                >
+                                                    {resource.name}
+                                                </strong>
+                                                <span className="text-muted text-xs">
+                                                    {resource.type
+                                                        .charAt(0)
+                                                        .toUpperCase() +
+                                                        resource.type.slice(1)}
+                                                </span>
+                                            </div>
+                                            <a
+                                                href={resource.link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary text-xs"
+                                            >
+                                                {resource.link}
+                                            </a>
+                                        </div>
+                                        <button
+                                            onClick={() =>
+                                                handleDeleteResourceClick(
+                                                    resource
+                                                )
+                                            }
+                                            className="btn btn-danger btn-small"
+                                            style={{
+                                                padding: "0.25rem 0.5rem",
+                                                fontSize: "0.7rem",
+                                            }}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     ) : (
-                        <p className="text-muted text-center">
+                        <p className="text-muted text-center text-sm">
                             No project resources yet
                         </p>
                     )}
@@ -632,7 +652,9 @@ const ProjectDetail = () => {
                 <div className="card">
                     <div className="card-header">
                         <div className="flex-between">
-                            <h2 className="card-title">Notes</h2>
+                            <h2 className="card-title">
+                                Notes ({project.notes?.length || 0})
+                            </h2>
                             <button
                                 onClick={() => setShowNoteModal(true)}
                                 className="btn btn-primary btn-small"
@@ -643,72 +665,91 @@ const ProjectDetail = () => {
                     </div>
 
                     {project.notes && project.notes.length > 0 ? (
-                        <div className="list">
-                            {project.notes
-                                .sort(
-                                    (a, b) =>
-                                        new Date(b.createdAt) -
-                                        new Date(a.createdAt)
-                                )
-                                .map((note) => (
-                                    <div
-                                        key={note._id}
-                                        className="list-item"
-                                        style={{
-                                            flexDirection: "column",
-                                            alignItems: "stretch",
-                                        }}
-                                    >
-                                        <div className="flex-between mb-1">
-                                            <span
-                                                className={`${getNoteTypeColor(
-                                                    note.type
-                                                )} font-weight-bold`}
-                                            >
-                                                {note.type
-                                                    .charAt(0)
-                                                    .toUpperCase() +
-                                                    note.type.slice(1)}
-                                            </span>
-                                            <div className="flex gap-1">
-                                                <span
-                                                    className="text-muted"
-                                                    style={{
-                                                        fontSize: "0.8rem",
-                                                    }}
-                                                >
-                                                    {formatDate(note.createdAt)}
-                                                </span>
-                                                <button
-                                                    onClick={() =>
-                                                        handleDeleteNoteClick(
-                                                            note
-                                                        )
-                                                    }
-                                                    className="btn btn-danger btn-small"
-                                                    style={{
-                                                        padding:
-                                                            "0.25rem 0.5rem",
-                                                        fontSize: "0.7rem",
-                                                    }}
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <p
+                        <div className="scrollable-list">
+                            <div className="compact-list">
+                                {project.notes
+                                    .sort(
+                                        (a, b) =>
+                                            new Date(b.createdAt) -
+                                            new Date(a.createdAt)
+                                    )
+                                    .map((note) => (
+                                        <div
+                                            key={note._id}
+                                            className="compact-item"
                                             style={{
-                                                margin: 0,
-                                                whiteSpace: "pre-wrap",
+                                                alignItems: "flex-start",
+                                                flexDirection: "column",
                                             }}
                                         >
-                                            {note.content}
-                                        </p>
-                                    </div>
-                                ))}
+                                            <div
+                                                className="flex-between"
+                                                style={{
+                                                    width: "100%",
+                                                    marginBottom: "0.5rem",
+                                                }}
+                                            >
+                                                <span
+                                                    className={`${getNoteTypeColor(
+                                                        note.type
+                                                    )}`}
+                                                    style={{
+                                                        fontSize: "0.85rem",
+                                                        fontWeight: "600",
+                                                    }}
+                                                >
+                                                    {note.type
+                                                        .charAt(0)
+                                                        .toUpperCase() +
+                                                        note.type.slice(1)}
+                                                </span>
+                                                <div
+                                                    className="flex"
+                                                    style={{
+                                                        gap: "0.5rem",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    <span className="text-muted text-xs">
+                                                        {formatDate(
+                                                            note.createdAt
+                                                        )}
+                                                    </span>
+                                                    <button
+                                                        onClick={() =>
+                                                            handleDeleteNoteClick(
+                                                                note
+                                                            )
+                                                        }
+                                                        className="btn btn-danger btn-small"
+                                                        style={{
+                                                            padding:
+                                                                "0.25rem 0.5rem",
+                                                            fontSize: "0.7rem",
+                                                        }}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <p
+                                                style={{
+                                                    margin: 0,
+                                                    whiteSpace: "pre-wrap",
+                                                    fontSize: "0.85rem",
+                                                    lineHeight: "1.4",
+                                                }}
+                                            >
+                                                {note.content}
+                                            </p>
+                                        </div>
+                                    ))}
+                            </div>
                         </div>
                     ) : (
-                        <p className="text-muted text-center">No notes yet</p>
+                        <p className="text-muted text-center text-sm">
+                            No notes yet
+                        </p>
                     )}
                 </div>
             </div>
@@ -774,7 +815,9 @@ const ProjectDetail = () => {
                         ⚠️ Are you sure you want to delete "
                         {resourceToDelete?.name}"?
                     </p>
-                    <p className="text-muted">This action cannot be undone.</p>
+                    <p className="text-muted text-sm">
+                        This action cannot be undone.
+                    </p>
                 </div>
 
                 <div className="btn-group">
@@ -802,7 +845,9 @@ const ProjectDetail = () => {
                     <p className="text-error mb-1">
                         ⚠️ Are you sure you want to delete this note?
                     </p>
-                    <p className="text-muted">This action cannot be undone.</p>
+                    <p className="text-muted text-sm">
+                        This action cannot be undone.
+                    </p>
                     <div
                         className="card mt-1"
                         style={{ background: "var(--bg-tertiary)" }}
@@ -815,6 +860,7 @@ const ProjectDetail = () => {
                             style={{
                                 margin: "0.5rem 0 0 0",
                                 whiteSpace: "pre-wrap",
+                                fontSize: "0.85rem",
                             }}
                         >
                             {noteToDelete?.content}

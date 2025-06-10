@@ -3,12 +3,10 @@ import { Link } from "react-router-dom";
 import { curriculumAPI } from "../utils/api";
 import {
     getLevelForStage,
-    sortProjectsByStageAndOrder,
     getProjectStats,
     getNextIncompleteProject,
 } from "../utils/stageUtils";
 import {
-    PROJECT_STATE_LABELS,
     PROJECT_STATE_COLORS,
     constructGithubUrl,
 } from "../utils/projectUtils";
@@ -124,21 +122,11 @@ const Dashboard = () => {
             const stats = getProjectStats(curr.projects || []);
             return sum + stats.completed;
         }, 0);
-        const totalResources = curricula.reduce(
-            (sum, curr) => sum + (curr.resources?.length || 0),
-            0
-        );
-        const totalLevels = curricula.reduce(
-            (sum, curr) => sum + (curr.levels?.length || 0),
-            0
-        );
 
         return {
             totalCurricula,
             totalProjects,
             completedProjects,
-            totalResources,
-            totalLevels,
             overallProgress:
                 totalProjects > 0
                     ? Math.round((completedProjects / totalProjects) * 100)
@@ -154,11 +142,13 @@ const Dashboard = () => {
 
     return (
         <div>
-            <div className="flex-between mb-2">
+            <div className="flex-between mb-1">
                 <div>
                     <h1>My Curricula</h1>
-                    <p className="text-muted">
-                        Manage your learning curricula and track your progress
+                    <p className="text-muted text-sm">
+                        {stats.totalCurricula} curricula •{" "}
+                        {stats.completedProjects}/{stats.totalProjects} projects
+                        completed
                     </p>
                 </div>
                 <button
@@ -171,96 +161,10 @@ const Dashboard = () => {
 
             {error && <div className="error-message mb-2">{error}</div>}
 
-            {curricula.length > 0 && (
-                <div className="card mb-2">
-                    <h2 className="card-title">Overview</h2>
-                    <div className="grid grid-2">
-                        <div>
-                            <div className="flex-between mb-1">
-                                <span className="text-muted">
-                                    Total Curricula:
-                                </span>
-                                <span className="text-primary">
-                                    {stats.totalCurricula}
-                                </span>
-                            </div>
-                            <div className="flex-between mb-1">
-                                <span className="text-muted">
-                                    Total Levels:
-                                </span>
-                                <span className="text-primary">
-                                    {stats.totalLevels}
-                                </span>
-                            </div>
-                            <div className="flex-between mb-1">
-                                <span className="text-muted">
-                                    Total Projects:
-                                </span>
-                                <span className="text-primary">
-                                    {stats.totalProjects}
-                                </span>
-                            </div>
-                            <div className="flex-between mb-1">
-                                <span className="text-muted">
-                                    Completed Projects:
-                                </span>
-                                <span className="text-success">
-                                    {stats.completedProjects}
-                                </span>
-                            </div>
-                            <div className="flex-between">
-                                <span className="text-muted">
-                                    Total Resources:
-                                </span>
-                                <span className="text-primary">
-                                    {stats.totalResources}
-                                </span>
-                            </div>
-                        </div>
-                        <div>
-                            <div className="text-center">
-                                <h3
-                                    className={
-                                        stats.overallProgress === 100
-                                            ? "text-success"
-                                            : "text-warning"
-                                    }
-                                >
-                                    {stats.overallProgress}%
-                                </h3>
-                                <p className="text-muted">Overall Progress</p>
-                                <div
-                                    style={{
-                                        background: "var(--bg-tertiary)",
-                                        borderRadius: "6px",
-                                        height: "8px",
-                                        width: "100%",
-                                        marginTop: "0.5rem",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            background:
-                                                stats.overallProgress === 100
-                                                    ? "var(--accent-success)"
-                                                    : "var(--accent-primary)",
-                                            height: "100%",
-                                            borderRadius: "6px",
-                                            width: `${stats.overallProgress}%`,
-                                            transition: "width 0.3s ease",
-                                        }}
-                                    ></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {curricula.length === 0 ? (
                 <div className="card text-center">
                     <h2 className="text-muted">No curricula yet</h2>
-                    <p className="text-muted">
+                    <p className="text-muted text-sm">
                         Create your first curriculum to start tracking your
                         learning journey
                     </p>
@@ -272,16 +176,16 @@ const Dashboard = () => {
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-2">
+                <div className="grid grid-3">
                     {curricula.map((curriculum) => {
                         const progress = getCurriculumProgress(curriculum);
-                        const sortedProjects = sortProjectsByStageAndOrder(
+                        const nextProject = getNextIncompleteProject(
                             curriculum.projects || []
                         );
 
                         return (
                             <div key={curriculum._id} className="card">
-                                <div className="card-header">
+                                <div className="flex-between mb-1">
                                     <h3 className="card-title">
                                         <Link
                                             to={`/curriculum/${curriculum._id}`}
@@ -293,314 +197,176 @@ const Dashboard = () => {
                                             {curriculum.name}
                                         </Link>
                                     </h3>
-                                    {curriculum.description && (
-                                        <p className="card-subtitle">
-                                            {curriculum.description}
-                                        </p>
-                                    )}
+                                    <span
+                                        className={
+                                            progress.percentage === 100
+                                                ? "text-success"
+                                                : "text-warning"
+                                        }
+                                        style={{
+                                            fontSize: "0.9rem",
+                                            fontWeight: "600",
+                                        }}
+                                    >
+                                        {progress.percentage}%
+                                    </span>
                                 </div>
 
-                                <div className="mb-1">
-                                    <div className="flex-between">
-                                        <span className="text-muted">
-                                            Levels:
-                                        </span>
-                                        <span>
-                                            {curriculum.levels?.length || 0}
-                                        </span>
-                                    </div>
-                                    <div className="flex-between">
-                                        <span className="text-muted">
-                                            Resources:
-                                        </span>
-                                        <span>
-                                            {curriculum.resources?.length || 0}
-                                        </span>
-                                    </div>
-                                    <div className="flex-between">
-                                        <span className="text-muted">
-                                            Projects:
-                                        </span>
-                                        <span>{progress.total}</span>
-                                    </div>
-                                    {progress.total > 0 && (
-                                        <>
-                                            <div className="flex-between">
-                                                <span className="text-muted">
-                                                    Completed:
-                                                </span>
-                                                <span className="text-success">
-                                                    {progress.completed}
-                                                </span>
-                                            </div>
-                                            <div className="flex-between mb-1">
-                                                <span className="text-muted">
-                                                    Progress:
-                                                </span>
-                                                <span
-                                                    className={
-                                                        progress.percentage ===
-                                                        100
-                                                            ? "text-success"
-                                                            : "text-warning"
-                                                    }
-                                                >
-                                                    {progress.percentage}%
-                                                </span>
-                                            </div>
+                                {progress.total > 0 && (
+                                    <div className="mb-1">
+                                        <div className="progress-bar">
                                             <div
+                                                className="progress-fill"
                                                 style={{
                                                     background:
-                                                        "var(--bg-tertiary)",
-                                                    borderRadius: "4px",
-                                                    height: "6px",
-                                                    width: "100%",
-                                                    marginBottom: "1rem",
+                                                        progress.percentage ===
+                                                        100
+                                                            ? "var(--accent-success)"
+                                                            : "var(--accent-primary)",
+                                                    width: `${progress.percentage}%`,
                                                 }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        background:
-                                                            progress.percentage ===
-                                                            100
-                                                                ? "var(--accent-success)"
-                                                                : "var(--accent-primary)",
-                                                        height: "100%",
-                                                        borderRadius: "4px",
-                                                        width: `${progress.percentage}%`,
-                                                        transition:
-                                                            "width 0.3s ease",
-                                                    }}
-                                                ></div>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
+                                            ></div>
+                                        </div>
+                                        <div
+                                            className="flex-between text-xs text-muted"
+                                            style={{ marginTop: "0.25rem" }}
+                                        >
+                                            <span>
+                                                {progress.completed}/
+                                                {progress.total} projects
+                                            </span>
+                                            <span>
+                                                {curriculum.levels?.length || 0}{" "}
+                                                levels
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
 
-                                {progress.total > 0 &&
-                                    progress.completed < progress.total && (
-                                        <div className="mb-1">
-                                            <p
-                                                className="text-muted"
-                                                style={{
-                                                    fontSize: "0.9rem",
-                                                    marginBottom: "0.5rem",
-                                                }}
-                                            >
-                                                Next project:
-                                            </p>
-                                            {(() => {
-                                                const nextProject =
-                                                    getNextIncompleteProject(
-                                                        curriculum.projects ||
-                                                            []
-                                                    );
-                                                return nextProject ? (
-                                                    <div
+                                {nextProject && (
+                                    <div
+                                        style={{
+                                            background: "var(--bg-tertiary)",
+                                            padding: "0.5rem",
+                                            borderRadius: "4px",
+                                            marginBottom: "0.75rem",
+                                        }}
+                                    >
+                                        <div
+                                            className="flex-between"
+                                            style={{ alignItems: "flex-start" }}
+                                        >
+                                            <div style={{ flex: 1 }}>
+                                                <div
+                                                    className="flex"
+                                                    style={{
+                                                        gap: "0.25rem",
+                                                        alignItems: "center",
+                                                        marginBottom: "0.25rem",
+                                                    }}
+                                                >
+                                                    <Link
+                                                        to={`/project/${nextProject._id}`}
                                                         style={{
-                                                            background:
-                                                                "var(--bg-tertiary)",
-                                                            padding: "0.5rem",
-                                                            borderRadius: "4px",
+                                                            textDecoration:
+                                                                "none",
+                                                            color: "inherit",
                                                             fontSize: "0.9rem",
+                                                            fontWeight: "500",
                                                         }}
                                                     >
-                                                        <div className="flex-between mb-1">
-                                                            <div
-                                                                className="flex"
-                                                                style={{
-                                                                    gap: "0.5rem",
-                                                                    alignItems:
-                                                                        "center",
-                                                                    flexWrap:
-                                                                        "wrap",
-                                                                }}
-                                                            >
-                                                                <Link
-                                                                    to={`/project/${nextProject._id}`}
-                                                                    style={{
-                                                                        textDecoration:
-                                                                            "none",
-                                                                        color: "inherit",
-                                                                    }}
-                                                                >
-                                                                    <strong>
-                                                                        {
-                                                                            nextProject.name
-                                                                        }
-                                                                    </strong>
-                                                                </Link>
-                                                                {nextProject.identifier && (
-                                                                    <span
-                                                                        className="text-primary"
-                                                                        style={{
-                                                                            fontSize:
-                                                                                "0.8rem",
-                                                                            fontWeight:
-                                                                                "600",
-                                                                        }}
-                                                                    >
-                                                                        [
-                                                                        {
-                                                                            nextProject.identifier
-                                                                        }
-                                                                        ]
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div
-                                                                className="flex"
-                                                                style={{
-                                                                    gap: "0.5rem",
-                                                                    fontSize:
-                                                                        "0.8rem",
-                                                                }}
-                                                            >
-                                                                <span className="text-muted">
-                                                                    Stage{" "}
-                                                                    {
-                                                                        nextProject.stage
-                                                                    }
-                                                                    {nextProject.order &&
-                                                                        ` #${nextProject.order}`}
-                                                                </span>
-                                                                {(() => {
-                                                                    const level =
-                                                                        getLevelForStage(
-                                                                            curriculum.levels ||
-                                                                                [],
-                                                                            nextProject.stage
-                                                                        );
-                                                                    return level ? (
-                                                                        <span className="text-primary">
-                                                                            {
-                                                                                level.name
-                                                                            }
-                                                                        </span>
-                                                                    ) : null;
-                                                                })()}
-                                                            </div>
-                                                        </div>
-                                                        <div
-                                                            className="flex"
+                                                        {nextProject.name}
+                                                    </Link>
+                                                    {nextProject.identifier && (
+                                                        <span
+                                                            className="text-primary"
                                                             style={{
-                                                                gap: "0.5rem",
-                                                                alignItems:
-                                                                    "center",
                                                                 fontSize:
-                                                                    "0.8rem",
+                                                                    "0.75rem",
+                                                                fontWeight:
+                                                                    "600",
                                                             }}
                                                         >
-                                                            <span
-                                                                className={
-                                                                    PROJECT_STATE_COLORS[
-                                                                        nextProject
-                                                                            .state
-                                                                    ]
-                                                                }
-                                                            >
-                                                                {
-                                                                    PROJECT_STATE_LABELS[
-                                                                        nextProject
-                                                                            .state
-                                                                    ]
-                                                                }
+                                                            [
+                                                            {
+                                                                nextProject.identifier
+                                                            }
+                                                            ]
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div
+                                                    className="flex"
+                                                    style={{
+                                                        gap: "0.5rem",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    <span className="text-muted text-xs">
+                                                        Stage{" "}
+                                                        {nextProject.stage}
+                                                        {nextProject.order &&
+                                                            ` #${nextProject.order}`}
+                                                    </span>
+                                                    {(() => {
+                                                        const level =
+                                                            getLevelForStage(
+                                                                curriculum.levels ||
+                                                                    [],
+                                                                nextProject.stage
+                                                            );
+                                                        return level ? (
+                                                            <span className="text-primary text-xs">
+                                                                {level.name}
                                                             </span>
-                                                            {nextProject.githubRepo &&
-                                                                user?.githubUsername && (
-                                                                    <a
-                                                                        href={constructGithubUrl(
-                                                                            user.githubUsername,
-                                                                            nextProject.githubRepo
-                                                                        )}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="text-primary"
-                                                                    >
-                                                                        GitHub →
-                                                                    </a>
-                                                                )}
-                                                        </div>
-                                                        {nextProject.topics &&
-                                                            nextProject.topics
-                                                                .length > 0 && (
-                                                                <div
-                                                                    className="flex"
-                                                                    style={{
-                                                                        gap: "0.25rem",
-                                                                        flexWrap:
-                                                                            "wrap",
-                                                                        marginTop:
-                                                                            "0.25rem",
-                                                                    }}
-                                                                >
-                                                                    {nextProject.topics
-                                                                        .slice(
-                                                                            0,
-                                                                            3
-                                                                        )
-                                                                        .map(
-                                                                            (
-                                                                                topic,
-                                                                                index
-                                                                            ) => (
-                                                                                <span
-                                                                                    key={
-                                                                                        index
-                                                                                    }
-                                                                                    style={{
-                                                                                        background:
-                                                                                            "var(--bg-primary)",
-                                                                                        padding:
-                                                                                            "0.125rem 0.25rem",
-                                                                                        borderRadius:
-                                                                                            "3px",
-                                                                                        fontSize:
-                                                                                            "0.7rem",
-                                                                                        color: "var(--text-secondary)",
-                                                                                    }}
-                                                                                >
-                                                                                    {
-                                                                                        topic
-                                                                                    }
-                                                                                </span>
-                                                                            )
-                                                                        )}
-                                                                    {nextProject
-                                                                        .topics
-                                                                        .length >
-                                                                        3 && (
-                                                                        <span
-                                                                            style={{
-                                                                                fontSize:
-                                                                                    "0.7rem",
-                                                                                color: "var(--text-muted)",
-                                                                                fontStyle:
-                                                                                    "italic",
-                                                                            }}
-                                                                        >
-                                                                            +
-                                                                            {nextProject
-                                                                                .topics
-                                                                                .length -
-                                                                                3}{" "}
-                                                                            more
-                                                                        </span>
-                                                                    )}
-                                                                </div>
+                                                        ) : null;
+                                                    })()}
+                                                </div>
+                                            </div>
+                                            <div
+                                                className="flex"
+                                                style={{
+                                                    gap: "0.25rem",
+                                                    alignItems: "center",
+                                                }}
+                                            >
+                                                <span
+                                                    className={
+                                                        PROJECT_STATE_COLORS[
+                                                            nextProject.state
+                                                        ]
+                                                    }
+                                                    style={{
+                                                        fontSize: "0.75rem",
+                                                    }}
+                                                >
+                                                    ●
+                                                </span>
+                                                {nextProject.githubRepo &&
+                                                    user?.githubUsername && (
+                                                        <a
+                                                            href={constructGithubUrl(
+                                                                user.githubUsername,
+                                                                nextProject.githubRepo
                                                             )}
-                                                    </div>
-                                                ) : null;
-                                            })()}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-primary text-xs"
+                                                        >
+                                                            GitHub
+                                                        </a>
+                                                    )}
+                                            </div>
                                         </div>
-                                    )}
+                                    </div>
+                                )}
 
                                 <div className="btn-group">
                                     <Link
                                         to={`/curriculum/${curriculum._id}`}
                                         className="btn btn-primary btn-small"
                                     >
-                                        View Details
+                                        View
                                     </Link>
                                     <button
                                         onClick={() =>
@@ -638,7 +404,7 @@ const Dashboard = () => {
                         ⚠️ Are you sure you want to delete "
                         {curriculumToDelete?.name}"?
                     </p>
-                    <p className="text-muted">
+                    <p className="text-muted text-sm">
                         This will permanently delete the curriculum and all
                         associated projects and notes. This action cannot be
                         undone.

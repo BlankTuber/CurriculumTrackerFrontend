@@ -75,14 +75,14 @@ const NoteForm = ({ note = null, projectId, onSuccess, onCancel }) => {
     const getNotePlaceholder = (type) => {
         const placeholders = {
             reflection:
-                "What did I learn from this project? What went well? What could be improved?",
+                "What did I learn? What went well? What could be improved?",
             todo: "- Implement user authentication\n- Add error handling\n- Write unit tests",
             idea: "Feature idea: Add dark mode toggle to improve user experience",
-            bug: "Issue: Login form doesn't validate email format properly. Steps to reproduce: ...",
+            bug: "Issue: Login form doesn't validate email format properly...",
             improvement:
                 "Could optimize the database queries by adding proper indexing",
             question:
-                "How should I handle file uploads? What's the best practice for this use case?",
+                "How should I handle file uploads? What's the best practice?",
             achievement:
                 "Successfully deployed the application to production! 🎉",
             other: "Any other notes about this project...",
@@ -90,27 +90,9 @@ const NoteForm = ({ note = null, projectId, onSuccess, onCancel }) => {
         return placeholders[type] || "Enter your note content...";
     };
 
-    const getNoteTypeDescription = (type) => {
-        const descriptions = {
-            reflection:
-                "Thoughts about what you learned, challenges faced, or insights gained",
-            todo: "Tasks or features that need to be implemented or completed",
-            idea: "New features, improvements, or creative solutions you want to remember",
-            bug: "Issues, problems, or unexpected behavior that needs to be fixed",
-            improvement:
-                "Ways to enhance performance, code quality, or user experience",
-            question:
-                "Questions you need to research or ask about for this project",
-            achievement:
-                "Milestones reached, goals accomplished, or successes to celebrate",
-            other: "Any other type of note that doesn't fit the above categories",
-        };
-        return descriptions[type] || "";
-    };
-
     return (
-        <form onSubmit={handleSubmit}>
-            {error && <div className="error-message mb-1">{error}</div>}
+        <form onSubmit={handleSubmit} className="form-compact">
+            {error && <div className="error-message">{error}</div>}
 
             <div className="form-group">
                 <label className="form-label" htmlFor="type">
@@ -131,12 +113,6 @@ const NoteForm = ({ note = null, projectId, onSuccess, onCancel }) => {
                         </option>
                     ))}
                 </select>
-                <p
-                    className="text-muted"
-                    style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
-                >
-                    {getNoteTypeDescription(formData.type)}
-                </p>
             </div>
 
             <div className="form-group">
@@ -153,18 +129,18 @@ const NoteForm = ({ note = null, projectId, onSuccess, onCancel }) => {
                     required
                     disabled={loading}
                     placeholder={getNotePlaceholder(formData.type)}
-                    style={{ minHeight: "150px" }}
+                    style={{ minHeight: "120px" }}
                 />
                 <div
-                    className="flex-between"
-                    style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                    className="flex-between text-xs"
+                    style={{ marginTop: "0.25rem" }}
                 >
                     <span className="text-muted">
                         {formData.type === "todo"
-                            ? "Tip: Use bullet points (-) or checkboxes for tasks"
+                            ? "Use bullet points (-) or checkboxes for tasks"
                             : formData.type === "bug"
-                            ? "Tip: Include steps to reproduce and expected vs actual behavior"
-                            : "Tip: Be specific and detailed for future reference"}
+                            ? "Include steps to reproduce and expected behavior"
+                            : "Be specific and detailed for future reference"}
                     </span>
                     <span
                         className={
@@ -173,7 +149,7 @@ const NoteForm = ({ note = null, projectId, onSuccess, onCancel }) => {
                                 : "text-muted"
                         }
                     >
-                        {formData.content.length}/5000 characters
+                        {formData.content.length}/5000
                     </span>
                 </div>
             </div>

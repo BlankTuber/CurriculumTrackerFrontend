@@ -29,8 +29,8 @@ const Login = () => {
     };
 
     return (
-        <div className="flex-center" style={{ minHeight: "60vh" }}>
-            <div className="card" style={{ maxWidth: "400px", width: "100%" }}>
+        <div className="flex-center" style={{ minHeight: "50vh" }}>
+            <div className="card" style={{ maxWidth: "350px", width: "100%" }}>
                 <div className="card-header text-center">
                     <h1 className="card-title">Login</h1>
                     <p className="card-subtitle">
@@ -83,8 +83,8 @@ const Login = () => {
                     </button>
                 </form>
 
-                <div className="text-center mt-1">
-                    <p className="text-muted">
+                <div className="text-center" style={{ marginTop: "0.75rem" }}>
+                    <p className="text-muted text-sm">
                         Don't have an account?{" "}
                         <Link to="/register" className="text-primary">
                             Register here

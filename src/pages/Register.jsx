@@ -83,7 +83,7 @@ const Register = () => {
     const displayError = validationError || error;
 
     return (
-        <div className="flex-center" style={{ minHeight: "60vh" }}>
+        <div className="flex-center" style={{ minHeight: "50vh" }}>
             <div className="card" style={{ maxWidth: "400px", width: "100%" }}>
                 <div className="card-header text-center">
                     <h1 className="card-title">Register</h1>
@@ -97,53 +97,45 @@ const Register = () => {
                 )}
 
                 <form onSubmit={handleSubmit}>
-                    <div className="grid grid-2">
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="username">
-                                Username
-                            </label>
-                            <input
-                                type="text"
-                                id="username"
-                                name="username"
-                                value={formData.username}
-                                onChange={handleChange}
-                                className="form-input"
-                                required
-                                disabled={loading}
-                                placeholder="3-30 characters, letters, numbers, and underscores only"
-                            />
-                        </div>
+                    <div className="form-group">
+                        <label className="form-label" htmlFor="username">
+                            Username
+                        </label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
+                            className="form-input"
+                            required
+                            disabled={loading}
+                            placeholder="3-30 characters, letters, numbers, and underscores only"
+                        />
+                    </div>
 
-                        <div className="form-group">
-                            <label
-                                className="form-label"
-                                htmlFor="githubUsername"
-                            >
-                                GitHub Username (optional)
-                            </label>
-                            <input
-                                type="text"
-                                id="githubUsername"
-                                name="githubUsername"
-                                value={formData.githubUsername}
-                                onChange={handleChange}
-                                className="form-input"
-                                maxLength={39}
-                                disabled={loading}
-                                placeholder="your-github-username"
-                            />
-                            <p
-                                className="text-muted"
-                                style={{
-                                    fontSize: "0.8rem",
-                                    marginTop: "0.25rem",
-                                }}
-                            >
-                                Used to automatically generate GitHub links for
-                                your projects
-                            </p>
-                        </div>
+                    <div className="form-group">
+                        <label className="form-label" htmlFor="githubUsername">
+                            GitHub Username (optional)
+                        </label>
+                        <input
+                            type="text"
+                            id="githubUsername"
+                            name="githubUsername"
+                            value={formData.githubUsername}
+                            onChange={handleChange}
+                            className="form-input"
+                            maxLength={39}
+                            disabled={loading}
+                            placeholder="your-github-username"
+                        />
+                        <p
+                            className="text-muted text-xs"
+                            style={{ marginTop: "0.25rem" }}
+                        >
+                            Used to automatically generate GitHub links for your
+                            projects
+                        </p>
                     </div>
 
                     <div className="grid grid-2">
@@ -195,8 +187,8 @@ const Register = () => {
                     </button>
                 </form>
 
-                <div className="text-center mt-1">
-                    <p className="text-muted">
+                <div className="text-center" style={{ marginTop: "0.75rem" }}>
+                    <p className="text-muted text-sm">
                         Already have an account?{" "}
                         <Link to="/login" className="text-primary">
                             Login here

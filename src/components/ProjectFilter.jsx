@@ -33,14 +33,14 @@ const ProjectFilter = ({
     };
 
     return (
-        <div className="card mb-2">
+        <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Filter Projects</h3>
+                <h3 className="card-title">Filters</h3>
             </div>
 
             <div className={showStateFilter ? "grid grid-3" : "grid grid-2"}>
-                <div>
-                    <label className="form-label">Filter by Stage</label>
+                <div className="form-group">
+                    <label className="form-label">Stage</label>
                     <select
                         value={stageFilter}
                         onChange={handleStageChange}
@@ -55,8 +55,8 @@ const ProjectFilter = ({
                     </select>
                 </div>
 
-                <div>
-                    <label className="form-label">Filter by Level</label>
+                <div className="form-group">
+                    <label className="form-label">Level</label>
                     <select
                         value={levelFilter}
                         onChange={handleLevelChange}
@@ -65,16 +65,15 @@ const ProjectFilter = ({
                         <option value="">All Levels</option>
                         {sortedLevels.map((level) => (
                             <option key={level._id} value={level._id}>
-                                {level.name} (Stages {level.stageStart}-
-                                {level.stageEnd})
+                                {level.name}
                             </option>
                         ))}
                     </select>
                 </div>
 
                 {showStateFilter && (
-                    <div>
-                        <label className="form-label">Filter by State</label>
+                    <div className="form-group">
+                        <label className="form-label">State</label>
                         <select
                             value={stateFilter}
                             onChange={(e) => onStateChange(e.target.value)}
@@ -94,16 +93,16 @@ const ProjectFilter = ({
             </div>
 
             {(stageFilter || levelFilter || stateFilter) && (
-                <div className="flex-between mt-1">
-                    <span className="text-muted">
-                        {stageFilter && `Showing Stage ${stageFilter}`}
+                <div className="flex-between" style={{ marginTop: "0.5rem" }}>
+                    <span className="text-muted text-xs">
+                        {stageFilter && `Stage ${stageFilter}`}
                         {levelFilter &&
-                            `Showing ${
+                            `${
                                 sortedLevels.find((l) => l._id === levelFilter)
                                     ?.name || "Selected Level"
                             }`}
                         {stateFilter &&
-                            ` • ${PROJECT_STATE_LABELS[stateFilter]} only`}
+                            ` • ${PROJECT_STATE_LABELS[stateFilter]}`}
                     </span>
                     <button
                         onClick={() => {
@@ -112,8 +111,12 @@ const ProjectFilter = ({
                             if (onStateChange) onStateChange("");
                         }}
                         className="btn btn-secondary btn-small"
+                        style={{
+                            padding: "0.25rem 0.5rem",
+                            fontSize: "0.7rem",
+                        }}
                     >
-                        Clear Filters
+                        Clear
                     </button>
                 </div>
             )}

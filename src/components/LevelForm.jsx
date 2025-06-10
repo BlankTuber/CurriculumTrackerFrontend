@@ -317,8 +317,8 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
     const suggestedOrder = getDynamicSuggestedOrder();
 
     return (
-        <form onSubmit={handleSubmit}>
-            {error && <div className="error-message mb-1">{error}</div>}
+        <form onSubmit={handleSubmit} className="form-compact">
+            {error && <div className="error-message">{error}</div>}
 
             <div className="grid grid-2">
                 <div className="form-group">
@@ -359,7 +359,7 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                         disabled={loading}
                         placeholder={suggestedOrder.toString()}
                     />
-                    <div style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}>
+                    <div className="text-xs" style={{ marginTop: "0.25rem" }}>
                         {formData.order && isOrderInUse(formData.order) && (
                             <p className="text-error">
                                 Order {formData.order} is already in use
@@ -390,12 +390,9 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                     className="form-textarea"
                     maxLength={500}
                     disabled={loading}
-                    placeholder={`Describe what students will learn in this level. For stages ${
+                    placeholder={`Describe what students will learn in stages ${
                         formData.stageStart || nextRange.stageStart
-                    }-${
-                        formData.stageEnd || nextRange.stageEnd
-                    }, what concepts and skills will be covered?`}
-                    style={{ minHeight: "80px" }}
+                    }-${formData.stageEnd || nextRange.stageEnd}...`}
                 />
             </div>
 
@@ -427,8 +424,8 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                     />
                     {!isEditing && formData.stageStart && (
                         <p
-                            className="text-muted"
-                            style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                            className="text-muted text-xs"
+                            style={{ marginTop: "0.25rem" }}
                         >
                             Stage end will auto-update to{" "}
                             {parseInt(formData.stageStart) + 4} (5-stage range)
@@ -441,11 +438,8 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                             formData.stageEnd
                         ) && (
                             <p
-                                className="text-error"
-                                style={{
-                                    fontSize: "0.8rem",
-                                    marginTop: "0.25rem",
-                                }}
+                                className="text-error text-xs"
+                                style={{ marginTop: "0.25rem" }}
                             >
                                 Stage range {formData.stageStart}-
                                 {formData.stageEnd} overlaps with existing
@@ -486,34 +480,21 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                 <div className="mb-1">
                     <h4
                         className="text-muted"
-                        style={{ fontSize: "0.9rem", marginBottom: "0.5rem" }}
+                        style={{ fontSize: "0.85rem", marginBottom: "0.5rem" }}
                     >
                         Existing Level Ranges
                     </h4>
                     <div
-                        style={{
-                            background: "var(--bg-tertiary)",
-                            padding: "0.75rem",
-                            borderRadius: "6px",
-                            fontSize: "0.8rem",
-                        }}
+                        className="scrollable-list"
+                        style={{ maxHeight: "150px" }}
                     >
                         {existingRanges.map((range, index) => (
-                            <div
-                                key={index}
-                                className="flex-between"
-                                style={{
-                                    marginBottom:
-                                        index < existingRanges.length - 1
-                                            ? "0.25rem"
-                                            : "0",
-                                }}
-                            >
+                            <div key={index} className="compact-item">
                                 <span>
                                     <strong>{range.name}</strong> (Order{" "}
                                     {range.order})
                                 </span>
-                                <span className="text-muted">
+                                <span className="text-muted text-xs">
                                     Stages {range.range}
                                 </span>
                             </div>

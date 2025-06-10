@@ -235,8 +235,6 @@ const UserProfile = () => {
             year: "numeric",
             month: "long",
             day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
         });
     };
 
@@ -246,15 +244,16 @@ const UserProfile = () => {
 
     return (
         <div>
-            <div className="flex-between mb-2">
+            <div className="flex-between mb-1">
                 <div>
                     <h1>User Profile</h1>
-                    <p className="text-muted">Manage your account settings</p>
+                    <p className="text-muted text-sm">
+                        Manage your account settings
+                    </p>
                 </div>
             </div>
 
             {error && <div className="error-message mb-2">{error}</div>}
-
             {success && <div className="success-message mb-2">{success}</div>}
 
             <div className="grid grid-2">
@@ -263,26 +262,26 @@ const UserProfile = () => {
                         <h2 className="card-title">Profile Information</h2>
                     </div>
 
-                    <div className="mb-1">
-                        <div className="flex-between mb-1">
+                    <div className="compact-list">
+                        <div className="compact-item">
                             <span className="text-muted">Username:</span>
                             <span>{user?.username}</span>
                         </div>
-                        <div className="flex-between mb-1">
+                        <div className="compact-item">
                             <span className="text-muted">GitHub Username:</span>
                             <span>{user?.githubUsername || "Not set"}</span>
                         </div>
-                        <div className="flex-between mb-1">
+                        <div className="compact-item">
                             <span className="text-muted">Member since:</span>
-                            <span>
+                            <span className="text-sm">
                                 {user?.createdAt
                                     ? formatDate(user.createdAt)
                                     : "N/A"}
                             </span>
                         </div>
-                        <div className="flex-between mb-1">
+                        <div className="compact-item">
                             <span className="text-muted">Last updated:</span>
-                            <span>
+                            <span className="text-sm">
                                 {user?.updatedAt
                                     ? formatDate(user.updatedAt)
                                     : "N/A"}
@@ -293,6 +292,7 @@ const UserProfile = () => {
                     <button
                         onClick={openUpdateModal}
                         className="btn btn-primary"
+                        style={{ marginTop: "0.75rem" }}
                     >
                         Update Profile
                     </button>
@@ -304,8 +304,8 @@ const UserProfile = () => {
                     </div>
 
                     {stats ? (
-                        <div className="mb-1">
-                            <div className="flex-between mb-1">
+                        <div className="compact-list">
+                            <div className="compact-item">
                                 <span className="text-muted">
                                     Total Curricula:
                                 </span>
@@ -315,18 +315,23 @@ const UserProfile = () => {
                             </div>
                         </div>
                     ) : (
-                        <p className="text-muted">No statistics available</p>
+                        <p className="text-muted text-center text-sm">
+                            No statistics available
+                        </p>
                     )}
                 </div>
             </div>
 
             <div
-                className="card mt-2"
-                style={{ borderColor: "var(--accent-error)" }}
+                className="card"
+                style={{
+                    borderColor: "var(--accent-error)",
+                    marginTop: "1rem",
+                }}
             >
                 <div className="card-header">
                     <h2 className="card-title text-error">Danger Zone</h2>
-                    <p className="card-subtitle">
+                    <p className="card-subtitle text-sm">
                         Once you delete your account, there is no going back.
                         Please be certain.
                     </p>
@@ -394,11 +399,8 @@ const UserProfile = () => {
                                 placeholder="your-github-username"
                             />
                             <p
-                                className="text-muted"
-                                style={{
-                                    fontSize: "0.8rem",
-                                    marginTop: "0.25rem",
-                                }}
+                                className="text-muted text-xs"
+                                style={{ marginTop: "0.25rem" }}
                             >
                                 Used to automatically generate GitHub links for
                                 your projects. Leave blank to remove.
@@ -505,7 +507,13 @@ const UserProfile = () => {
                         ⚠️ This action cannot be undone. This will permanently
                         delete your account and all associated data including:
                     </p>
-                    <ul style={{ marginLeft: "1.5rem", marginBottom: "1rem" }}>
+                    <ul
+                        style={{
+                            marginLeft: "1rem",
+                            marginBottom: "0.75rem",
+                            fontSize: "0.9rem",
+                        }}
+                    >
                         <li>All your curricula</li>
                         <li>All your projects</li>
                         <li>All your notes</li>

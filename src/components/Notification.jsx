@@ -12,7 +12,7 @@ const Notification = ({
         if (isOpen && autoClose) {
             const timer = setTimeout(() => {
                 onClose();
-            }, 4000);
+            }, 3000);
 
             return () => clearTimeout(timer);
         }

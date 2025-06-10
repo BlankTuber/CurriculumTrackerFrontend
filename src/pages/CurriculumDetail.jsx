@@ -366,26 +366,28 @@ const CurriculumDetail = () => {
 
     return (
         <div>
-            <div className="flex-between mb-2">
+            <div className="flex-between mb-1">
                 <div>
                     <Link
                         to="/dashboard"
-                        className="text-muted"
+                        className="text-muted text-sm"
                         style={{ textDecoration: "none" }}
                     >
                         ← Back to Dashboard
                     </Link>
                     <h1>{curriculum.name}</h1>
                     {curriculum.description && (
-                        <p className="text-muted">{curriculum.description}</p>
+                        <p className="text-muted text-sm">
+                            {curriculum.description}
+                        </p>
                     )}
                     {total > 0 && (
                         <div
                             className="flex"
-                            style={{ gap: "1rem", marginTop: "0.5rem" }}
+                            style={{ gap: "1rem", marginTop: "0.25rem" }}
                         >
-                            <span className="text-muted">
-                                Progress: {completed}/{total} projects completed
+                            <span className="text-muted text-sm">
+                                {completed}/{total} projects completed
                             </span>
                             <span
                                 className={
@@ -393,6 +395,10 @@ const CurriculumDetail = () => {
                                         ? "text-success"
                                         : "text-warning"
                                 }
+                                style={{
+                                    fontSize: "0.85rem",
+                                    fontWeight: "600",
+                                }}
                             >
                                 ({Math.round((completed / total) * 100)}%)
                             </span>
@@ -423,7 +429,9 @@ const CurriculumDetail = () => {
                 <div className="card">
                     <div className="card-header">
                         <div className="flex-between">
-                            <h2 className="card-title">Levels</h2>
+                            <h2 className="card-title">
+                                Levels ({sortedLevels.length})
+                            </h2>
                             <button
                                 onClick={() => setShowLevelModal(true)}
                                 className="btn btn-primary btn-small"
@@ -434,69 +442,96 @@ const CurriculumDetail = () => {
                     </div>
 
                     {sortedLevels.length > 0 ? (
-                        <div className="list">
-                            {sortedLevels.map((level) => (
-                                <div key={level._id} className="list-item">
-                                    <div style={{ flex: 1 }}>
-                                        <h4>{level.name}</h4>
-                                        <p
-                                            className="text-muted"
-                                            style={{ fontSize: "0.9rem" }}
-                                        >
-                                            {level.description}
-                                        </p>
-                                        <div
-                                            className="flex"
-                                            style={{
-                                                gap: "1rem",
-                                                alignItems: "center",
-                                            }}
-                                        >
-                                            <span
-                                                className="text-muted"
-                                                style={{ fontSize: "0.8rem" }}
+                        <div className="scrollable-list">
+                            <div className="compact-list">
+                                {sortedLevels.map((level) => (
+                                    <div
+                                        key={level._id}
+                                        className="compact-item"
+                                    >
+                                        <div style={{ flex: 1 }}>
+                                            <div
+                                                className="flex"
+                                                style={{
+                                                    gap: "0.5rem",
+                                                    alignItems: "center",
+                                                    marginBottom: "0.25rem",
+                                                }}
                                             >
-                                                Stages {level.stageStart}-
-                                                {level.stageEnd}
-                                            </span>
-                                            <span
-                                                className="text-muted"
-                                                style={{ fontSize: "0.8rem" }}
+                                                <strong
+                                                    style={{
+                                                        fontSize: "0.9rem",
+                                                    }}
+                                                >
+                                                    {level.name}
+                                                </strong>
+                                                <span className="text-muted text-xs">
+                                                    Stages {level.stageStart}-
+                                                    {level.stageEnd}
+                                                </span>
+                                                <span className="text-muted text-xs">
+                                                    Order {level.order}
+                                                </span>
+                                            </div>
+                                            {level.description && (
+                                                <p
+                                                    className="text-muted text-xs"
+                                                    style={{
+                                                        margin: 0,
+                                                        lineHeight: "1.3",
+                                                    }}
+                                                >
+                                                    {level.description}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="btn-group">
+                                            <button
+                                                onClick={() =>
+                                                    handleEditLevelClick(level)
+                                                }
+                                                className="btn btn-secondary btn-small"
+                                                style={{
+                                                    padding: "0.25rem 0.5rem",
+                                                    fontSize: "0.7rem",
+                                                }}
                                             >
-                                                Order: {level.order}
-                                            </span>
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() =>
+                                                    handleDeleteLevelClick(
+                                                        level
+                                                    )
+                                                }
+                                                className="btn btn-danger btn-small"
+                                                style={{
+                                                    padding: "0.25rem 0.5rem",
+                                                    fontSize: "0.7rem",
+                                                }}
+                                            >
+                                                Delete
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="btn-group">
-                                        <button
-                                            onClick={() =>
-                                                handleEditLevelClick(level)
-                                            }
-                                            className="btn btn-secondary btn-small"
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                handleDeleteLevelClick(level)
-                                            }
-                                            className="btn btn-danger btn-small"
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     ) : (
-                        <p className="text-muted text-center">No levels yet</p>
+                        <p className="text-muted text-center text-sm">
+                            No levels yet
+                        </p>
                     )}
                 </div>
+            </div>
 
+            <div className="grid grid-2">
                 <div className="card">
                     <div className="card-header">
                         <div className="flex-between">
-                            <h2 className="card-title">Resources</h2>
+                            <h2 className="card-title">
+                                Resources ({curriculum.resources?.length || 0})
+                            </h2>
                             <button
                                 onClick={() => setShowResourceModal(true)}
                                 className="btn btn-primary btn-small"
@@ -507,273 +542,308 @@ const CurriculumDetail = () => {
                     </div>
 
                     {curriculum.resources && curriculum.resources.length > 0 ? (
-                        <div className="list">
-                            {curriculum.resources.map((resource) => (
-                                <div key={resource._id} className="list-item">
-                                    <div style={{ flex: 1 }}>
-                                        <h4>{resource.name}</h4>
-                                        <p className="text-muted">
-                                            {resource.type
-                                                .charAt(0)
-                                                .toUpperCase() +
-                                                resource.type.slice(1)}
-                                        </p>
-                                        <a
-                                            href={resource.link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-primary"
-                                            style={{ fontSize: "0.9rem" }}
-                                        >
-                                            {resource.link}
-                                        </a>
-                                    </div>
-                                    <button
-                                        onClick={() =>
-                                            handleDeleteResourceClick(resource)
-                                        }
-                                        className="btn btn-danger btn-small"
+                        <div className="scrollable-list">
+                            <div className="compact-list">
+                                {curriculum.resources.map((resource) => (
+                                    <div
+                                        key={resource._id}
+                                        className="compact-item"
                                     >
-                                        Delete
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-muted text-center">
-                            No resources yet
-                        </p>
-                    )}
-                </div>
-            </div>
-
-            <div className="card">
-                <div className="card-header">
-                    <div className="flex-between">
-                        <h2 className="card-title">Projects</h2>
-                        <button
-                            onClick={() => setShowProjectModal(true)}
-                            className="btn btn-primary btn-small"
-                        >
-                            Add Project
-                        </button>
-                    </div>
-                </div>
-
-                {sortedProjects.length > 0 ? (
-                    <div className="list">
-                        {sortedProjects.map((project) => {
-                            const projectLevel = getLevelForStage(
-                                curriculum.levels || [],
-                                project.stage
-                            );
-                            const githubUrl = constructGithubUrl(
-                                user?.githubUsername,
-                                project.githubRepo
-                            );
-
-                            return (
-                                <div
-                                    key={project._id}
-                                    className="list-item"
-                                    style={{
-                                        flexDirection: "column",
-                                        alignItems: "stretch",
-                                    }}
-                                >
-                                    <div className="flex-between mb-1">
                                         <div style={{ flex: 1 }}>
                                             <div
                                                 className="flex"
                                                 style={{
-                                                    alignItems: "center",
                                                     gap: "0.5rem",
-                                                    marginBottom: "0.5rem",
-                                                    flexWrap: "wrap",
+                                                    alignItems: "center",
                                                 }}
                                             >
-                                                <h4>
+                                                <strong
+                                                    style={{
+                                                        fontSize: "0.9rem",
+                                                    }}
+                                                >
+                                                    {resource.name}
+                                                </strong>
+                                                <span className="text-muted text-xs">
+                                                    {resource.type
+                                                        .charAt(0)
+                                                        .toUpperCase() +
+                                                        resource.type.slice(1)}
+                                                </span>
+                                            </div>
+                                            <a
+                                                href={resource.link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary text-xs"
+                                            >
+                                                {resource.link}
+                                            </a>
+                                        </div>
+                                        <button
+                                            onClick={() =>
+                                                handleDeleteResourceClick(
+                                                    resource
+                                                )
+                                            }
+                                            className="btn btn-danger btn-small"
+                                            style={{
+                                                padding: "0.25rem 0.5rem",
+                                                fontSize: "0.7rem",
+                                            }}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-muted text-center text-sm">
+                            No resources yet
+                        </p>
+                    )}
+                </div>
+
+                <div className="card">
+                    <div className="card-header">
+                        <div className="flex-between">
+                            <h2 className="card-title">
+                                Projects ({sortedProjects.length})
+                            </h2>
+                            <button
+                                onClick={() => setShowProjectModal(true)}
+                                className="btn btn-primary btn-small"
+                            >
+                                Add Project
+                            </button>
+                        </div>
+                    </div>
+
+                    {sortedProjects.length > 0 ? (
+                        <div className="scrollable-list">
+                            <div className="compact-list">
+                                {sortedProjects.map((project) => {
+                                    const projectLevel = getLevelForStage(
+                                        curriculum.levels || [],
+                                        project.stage
+                                    );
+                                    const githubUrl = constructGithubUrl(
+                                        user?.githubUsername,
+                                        project.githubRepo
+                                    );
+
+                                    return (
+                                        <div
+                                            key={project._id}
+                                            className="compact-item"
+                                            style={{ alignItems: "flex-start" }}
+                                        >
+                                            <div style={{ flex: 1 }}>
+                                                <div
+                                                    className="flex"
+                                                    style={{
+                                                        gap: "0.5rem",
+                                                        alignItems: "center",
+                                                        marginBottom: "0.25rem",
+                                                        flexWrap: "wrap",
+                                                    }}
+                                                >
                                                     <Link
                                                         to={`/project/${project._id}`}
                                                         style={{
                                                             textDecoration:
                                                                 "none",
                                                             color: "inherit",
+                                                            fontSize: "0.9rem",
+                                                            fontWeight: "500",
                                                         }}
                                                     >
                                                         {project.name}
                                                     </Link>
-                                                </h4>
-                                                {project.identifier && (
-                                                    <span
-                                                        className="text-primary"
-                                                        style={{
-                                                            fontSize: "1rem",
-                                                            fontWeight: "600",
-                                                        }}
-                                                    >
-                                                        [{project.identifier}]
+                                                    {project.identifier && (
+                                                        <span
+                                                            className="text-primary"
+                                                            style={{
+                                                                fontSize:
+                                                                    "0.75rem",
+                                                                fontWeight:
+                                                                    "600",
+                                                            }}
+                                                        >
+                                                            [
+                                                            {project.identifier}
+                                                            ]
+                                                        </span>
+                                                    )}
+                                                    <span className="text-muted text-xs">
+                                                        Stage {project.stage}
+                                                        {project.order &&
+                                                            ` #${project.order}`}
                                                     </span>
-                                                )}
-                                                <span
-                                                    className={
-                                                        PROJECT_STATE_COLORS[
-                                                            project.state
-                                                        ]
-                                                    }
-                                                    style={{
-                                                        fontSize: "0.9rem",
-                                                        fontWeight: "500",
-                                                    }}
-                                                >
-                                                    {
-                                                        PROJECT_STATE_LABELS[
-                                                            project.state
-                                                        ]
-                                                    }
-                                                </span>
-                                            </div>
-                                            <p
-                                                className="text-muted"
-                                                style={{
-                                                    fontSize: "0.9rem",
-                                                    margin: "0 0 0.5rem 0",
-                                                }}
-                                            >
-                                                {project.description}
-                                            </p>
-                                            <div
-                                                className="flex"
-                                                style={{
-                                                    gap: "1rem",
-                                                    alignItems: "center",
-                                                    marginBottom: "0.5rem",
-                                                    flexWrap: "wrap",
-                                                }}
-                                            >
-                                                <span
-                                                    className="text-muted"
-                                                    style={{
-                                                        fontSize: "0.8rem",
-                                                    }}
-                                                >
-                                                    Stage {project.stage}
-                                                    {project.order &&
-                                                        ` #${project.order}`}
-                                                </span>
-                                                {projectLevel && (
+                                                    {projectLevel && (
+                                                        <span className="text-primary text-xs">
+                                                            {projectLevel.name}
+                                                        </span>
+                                                    )}
                                                     <span
-                                                        className="text-primary"
+                                                        className={
+                                                            PROJECT_STATE_COLORS[
+                                                                project.state
+                                                            ]
+                                                        }
                                                         style={{
-                                                            fontSize: "0.8rem",
+                                                            fontSize: "0.75rem",
+                                                            fontWeight: "500",
                                                         }}
                                                     >
-                                                        {projectLevel.name}
+                                                        {
+                                                            PROJECT_STATE_LABELS[
+                                                                project.state
+                                                            ]
+                                                        }
                                                     </span>
-                                                )}
-                                                {githubUrl && (
-                                                    <a
-                                                        href={githubUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-primary"
-                                                        style={{
-                                                            fontSize: "0.8rem",
-                                                        }}
-                                                    >
-                                                        GitHub →
-                                                    </a>
-                                                )}
-                                            </div>
-                                            {project.topics &&
-                                                project.topics.length > 0 && (
-                                                    <div
-                                                        className="flex"
-                                                        style={{
-                                                            gap: "0.25rem",
-                                                            flexWrap: "wrap",
-                                                            marginBottom:
-                                                                "0.5rem",
-                                                        }}
-                                                    >
-                                                        {project.topics.map(
-                                                            (topic, index) => (
+                                                    {githubUrl && (
+                                                        <a
+                                                            href={githubUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-primary text-xs"
+                                                        >
+                                                            GitHub
+                                                        </a>
+                                                    )}
+                                                </div>
+                                                {project.topics &&
+                                                    project.topics.length >
+                                                        0 && (
+                                                        <div
+                                                            className="flex"
+                                                            style={{
+                                                                gap: "0.25rem",
+                                                                flexWrap:
+                                                                    "wrap",
+                                                            }}
+                                                        >
+                                                            {project.topics
+                                                                .slice(0, 4)
+                                                                .map(
+                                                                    (
+                                                                        topic,
+                                                                        index
+                                                                    ) => (
+                                                                        <span
+                                                                            key={
+                                                                                index
+                                                                            }
+                                                                            style={{
+                                                                                background:
+                                                                                    "var(--bg-primary)",
+                                                                                padding:
+                                                                                    "0.125rem 0.25rem",
+                                                                                borderRadius:
+                                                                                    "3px",
+                                                                                fontSize:
+                                                                                    "0.65rem",
+                                                                                color: "var(--text-secondary)",
+                                                                            }}
+                                                                        >
+                                                                            {
+                                                                                topic
+                                                                            }
+                                                                        </span>
+                                                                    )
+                                                                )}
+                                                            {project.topics
+                                                                .length > 4 && (
                                                                 <span
-                                                                    key={index}
+                                                                    className="text-muted"
                                                                     style={{
-                                                                        background:
-                                                                            "var(--bg-tertiary)",
-                                                                        padding:
-                                                                            "0.125rem 0.25rem",
-                                                                        borderRadius:
-                                                                            "3px",
                                                                         fontSize:
-                                                                            "0.7rem",
-                                                                        color: "var(--text-secondary)",
+                                                                            "0.65rem",
+                                                                        fontStyle:
+                                                                            "italic",
                                                                     }}
                                                                 >
-                                                                    {topic}
+                                                                    +
+                                                                    {project
+                                                                        .topics
+                                                                        .length -
+                                                                        4}{" "}
+                                                                    more
                                                                 </span>
-                                                            )
-                                                        )}
-                                                    </div>
-                                                )}
-                                        </div>
-                                    </div>
-                                    <div className="btn-group">
-                                        <select
-                                            value={project.state}
-                                            onChange={(e) =>
-                                                handleUpdateProjectState(
-                                                    project,
-                                                    e.target.value
-                                                )
-                                            }
-                                            className="form-select"
-                                            style={{
-                                                width: "auto",
-                                                minWidth: "150px",
-                                            }}
-                                        >
-                                            {Object.entries(
-                                                PROJECT_STATE_LABELS
-                                            ).map(([value, label]) => (
-                                                <option
-                                                    key={value}
-                                                    value={value}
+                                                            )}
+                                                        </div>
+                                                    )}
+                                            </div>
+                                            <div className="btn-group">
+                                                <select
+                                                    value={project.state}
+                                                    onChange={(e) =>
+                                                        handleUpdateProjectState(
+                                                            project,
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="form-select"
+                                                    style={{
+                                                        width: "auto",
+                                                        minWidth: "120px",
+                                                        fontSize: "0.75rem",
+                                                        padding: "0.25rem",
+                                                    }}
                                                 >
-                                                    {label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <Link
-                                            to={`/project/${project._id}`}
-                                            className="btn btn-primary btn-small"
-                                        >
-                                            View
-                                        </Link>
-                                        <button
-                                            onClick={() =>
-                                                handleDeleteProjectClick(
-                                                    project
-                                                )
-                                            }
-                                            className="btn btn-danger btn-small"
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <p className="text-muted text-center">
-                        {stageFilter || levelFilter || stateFilter
-                            ? "No projects match the current filters"
-                            : "No projects yet"}
-                    </p>
-                )}
+                                                    {Object.entries(
+                                                        PROJECT_STATE_LABELS
+                                                    ).map(([value, label]) => (
+                                                        <option
+                                                            key={value}
+                                                            value={value}
+                                                        >
+                                                            {label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <Link
+                                                    to={`/project/${project._id}`}
+                                                    className="btn btn-primary btn-small"
+                                                    style={{
+                                                        padding:
+                                                            "0.25rem 0.5rem",
+                                                        fontSize: "0.7rem",
+                                                    }}
+                                                >
+                                                    View
+                                                </Link>
+                                                <button
+                                                    onClick={() =>
+                                                        handleDeleteProjectClick(
+                                                            project
+                                                        )
+                                                    }
+                                                    className="btn btn-danger btn-small"
+                                                    style={{
+                                                        padding:
+                                                            "0.25rem 0.5rem",
+                                                        fontSize: "0.7rem",
+                                                    }}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-muted text-center text-sm">
+                            {stageFilter || levelFilter || stateFilter
+                                ? "No projects match the current filters"
+                                : "No projects yet"}
+                        </p>
+                    )}
+                </div>
             </div>
 
             <Modal
@@ -847,7 +917,7 @@ const CurriculumDetail = () => {
                         ⚠️ Are you sure you want to delete "
                         {projectToDelete?.name}"?
                     </p>
-                    <p className="text-muted">
+                    <p className="text-muted text-sm">
                         This will permanently delete the project and all
                         associated notes. This action cannot be undone.
                     </p>
@@ -879,7 +949,9 @@ const CurriculumDetail = () => {
                         ⚠️ Are you sure you want to delete "
                         {resourceToDelete?.name}"?
                     </p>
-                    <p className="text-muted">This action cannot be undone.</p>
+                    <p className="text-muted text-sm">
+                        This action cannot be undone.
+                    </p>
                 </div>
 
                 <div className="btn-group">
@@ -908,7 +980,9 @@ const CurriculumDetail = () => {
                         ⚠️ Are you sure you want to delete "
                         {levelToDelete?.name}"?
                     </p>
-                    <p className="text-muted">This action cannot be undone.</p>
+                    <p className="text-muted text-sm">
+                        This action cannot be undone.
+                    </p>
                 </div>
 
                 <div className="btn-group">

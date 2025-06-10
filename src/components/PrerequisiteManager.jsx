@@ -71,11 +71,11 @@ const PrerequisiteManager = ({ project, onSuccess, onCancel }) => {
     }
 
     return (
-        <div>
-            {error && <div className="error-message mb-1">{error}</div>}
+        <div className="form-compact">
+            {error && <div className="error-message">{error}</div>}
 
-            <div className="mb-1">
-                <p className="text-muted">
+            <div style={{ marginBottom: "0.75rem" }}>
+                <p className="text-muted text-sm">
                     Select which projects must be completed before this project
                     can be started. Prerequisites help organize your learning
                     path and ensure you have the necessary foundation before
@@ -91,7 +91,7 @@ const PrerequisiteManager = ({ project, onSuccess, onCancel }) => {
                 disabled={saving}
             />
 
-            <div className="btn-group mt-2">
+            <div className="btn-group" style={{ marginTop: "1rem" }}>
                 <button
                     onClick={handleSave}
                     className="btn btn-primary"
@@ -109,13 +109,19 @@ const PrerequisiteManager = ({ project, onSuccess, onCancel }) => {
             </div>
 
             {!hasChanges() && selectedPrerequisites.length === 0 && (
-                <p className="text-muted mt-1" style={{ fontSize: "0.9rem" }}>
+                <p
+                    className="text-muted text-sm text-center"
+                    style={{ marginTop: "0.5rem" }}
+                >
                     This project currently has no prerequisites
                 </p>
             )}
 
             {!hasChanges() && selectedPrerequisites.length > 0 && (
-                <p className="text-muted mt-1" style={{ fontSize: "0.9rem" }}>
+                <p
+                    className="text-muted text-sm text-center"
+                    style={{ marginTop: "0.5rem" }}
+                >
                     No changes made to prerequisites
                 </p>
             )}

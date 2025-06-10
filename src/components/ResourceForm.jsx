@@ -121,81 +121,49 @@ const ResourceForm = ({
         }
     };
 
-    const getResourceTypePlaceholder = (type) => {
-        const placeholders = {
-            documentation: "Official API documentation, framework guides",
-            theory: "Computer Science concepts, design patterns",
-            book: "Programming books, technical literature",
-            "online resource": "Tutorials, blog posts, online courses",
-            video: "YouTube tutorials, conference talks",
-            tutorial: "Step-by-step guides, coding tutorials",
-            article: "Technical articles, best practices",
-            other: "Any other useful resource",
-        };
-        return placeholders[type] || "Resource name";
-    };
-
-    const getUrlPlaceholder = (type) => {
-        const placeholders = {
-            documentation: "https://docs.example.com/api",
-            theory: "https://en.wikipedia.org/wiki/Design_pattern",
-            book: "https://www.amazon.com/book-title",
-            "online resource": "https://course.example.com",
-            video: "https://youtube.com/watch?v=...",
-            tutorial: "https://tutorial.example.com",
-            article: "https://blog.example.com/article",
-            other: "https://example.com",
-        };
-        return placeholders[type] || "https://example.com";
-    };
-
     return (
-        <form onSubmit={handleSubmit}>
-            {error && <div className="error-message mb-1">{error}</div>}
+        <form onSubmit={handleSubmit} className="form-compact">
+            {error && <div className="error-message">{error}</div>}
 
-            <div className="form-group">
-                <label className="form-label" htmlFor="name">
-                    Resource Name *
-                </label>
-                <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="form-input"
-                    maxLength={100}
-                    required
-                    disabled={loading}
-                    placeholder={getResourceTypePlaceholder(formData.type)}
-                />
-            </div>
+            <div className="grid grid-2">
+                <div className="form-group">
+                    <label className="form-label" htmlFor="name">
+                        Resource Name *
+                    </label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="form-input"
+                        maxLength={100}
+                        required
+                        disabled={loading}
+                        placeholder="e.g., React Documentation"
+                    />
+                </div>
 
-            <div className="form-group">
-                <label className="form-label" htmlFor="type">
-                    Resource Type *
-                </label>
-                <select
-                    id="type"
-                    name="type"
-                    value={formData.type}
-                    onChange={handleChange}
-                    className="form-select"
-                    required
-                    disabled={loading}
-                >
-                    {RESOURCE_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                        </option>
-                    ))}
-                </select>
-                <p
-                    className="text-muted"
-                    style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
-                >
-                    Choose the type that best describes this resource
-                </p>
+                <div className="form-group">
+                    <label className="form-label" htmlFor="type">
+                        Resource Type *
+                    </label>
+                    <select
+                        id="type"
+                        name="type"
+                        value={formData.type}
+                        onChange={handleChange}
+                        className="form-select"
+                        required
+                        disabled={loading}
+                    >
+                        {RESOURCE_TYPES.map((type) => (
+                            <option key={type} value={type}>
+                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             <div className="form-group">
@@ -211,14 +179,8 @@ const ResourceForm = ({
                     className="form-input"
                     required
                     disabled={loading}
-                    placeholder={getUrlPlaceholder(formData.type)}
+                    placeholder="https://example.com"
                 />
-                <p
-                    className="text-muted"
-                    style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
-                >
-                    Must be a valid URL starting with http:// or https://
-                </p>
             </div>
 
             <div className="btn-group">
