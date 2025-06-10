@@ -783,6 +783,111 @@ h4 {
     margin-bottom: 0.25rem;
 }
 
+@media (max-width: 480px) {
+    body {
+        font-size: 16px;
+    }
+
+    .container {
+        padding: 0 0.5rem;
+    }
+
+    .main-content {
+        padding: 1rem 0;
+    }
+
+    .card {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        border-radius: 4px;
+    }
+
+    .card-title {
+        font-size: 1rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .btn-small {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        min-height: 40px;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+        padding: 0.75rem;
+        font-size: 16px;
+        min-height: 44px;
+    }
+
+    .form-label {
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .compact-item {
+        padding: 0.75rem;
+        font-size: 0.9rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .resource-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .modal {
+        margin: 0.5rem;
+        padding: 1rem;
+        max-height: 95vh;
+    }
+
+    .modal-title {
+        font-size: 1rem;
+    }
+
+    .notification-overlay {
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+    }
+
+    .notification {
+        min-width: auto;
+        width: 100%;
+        padding: 1rem;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+    }
+
+    h2 {
+        font-size: 1.15rem;
+    }
+
+    .text-xs {
+        font-size: 0.75rem;
+    }
+
+    .text-sm {
+        font-size: 0.85rem;
+    }
+
+    .scrollable-list {
+        max-height: 250px;
+    }
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 0 0.75rem;
@@ -796,11 +901,32 @@ h4 {
 
     .btn-group {
         flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .btn-group .btn {
+        width: 100%;
     }
 
     .header-content {
         flex-direction: column;
         gap: 0.75rem;
+        text-align: center;
+    }
+
+    .user-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .flex-between {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .flex-between > * {
+        text-align: center;
     }
 
     .modal {
@@ -818,10 +944,60 @@ h4 {
         min-width: auto;
         width: 100%;
     }
+
+    .form-compact .grid-2,
+    .form-compact .grid-3,
+    .form-compact .grid-4 {
+        grid-template-columns: 1fr;
+    }
+
+    .inline-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .inline-form .form-group {
+        min-width: auto;
+    }
+
+    .compact-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .compact-item .btn-group {
+        align-self: stretch;
+    }
+
+    .list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        text-align: left;
+    }
+
+    .scrollable-list {
+        max-height: 200px;
+    }
 }
 
 @media (min-width: 769px) {
     .modal {
         min-width: 500px;
+    }
+
+    .flex-between > * {
+        text-align: initial;
+    }
+}
+
+@media (max-width: 1024px) and (orientation: landscape) {
+    .modal {
+        max-height: 85vh;
+    }
+
+    .scrollable-list {
+        max-height: 150px;
     }
 }
