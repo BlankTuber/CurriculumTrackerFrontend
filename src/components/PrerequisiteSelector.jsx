@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
     sortProjectsByStageAndOrder,
     getLevelForStage,
@@ -364,6 +365,22 @@ const PrerequisiteSelector = ({
                                                                 )}
                                                             </div>
                                                         )}
+                                                    <div
+                                                        style={{
+                                                            marginTop: "0.5rem",
+                                                            fontSize: "0.8rem",
+                                                        }}
+                                                    >
+                                                        <Link
+                                                            to={`/project/${project._id}`}
+                                                            className="text-primary"
+                                                            onClick={(e) =>
+                                                                e.stopPropagation()
+                                                            }
+                                                        >
+                                                            View Project →
+                                                        </Link>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

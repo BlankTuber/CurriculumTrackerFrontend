@@ -729,14 +729,10 @@ const CurriculumDetail = () => {
                                                     e.target.value
                                                 )
                                             }
-                                            className="btn btn-secondary btn-small"
+                                            className="form-select"
                                             style={{
-                                                padding: "0.5rem",
-                                                minWidth: "auto",
-                                                border: "1px solid var(--border-color)",
-                                                borderRadius: "6px",
-                                                background:
-                                                    "var(--bg-tertiary)",
+                                                width: "auto",
+                                                minWidth: "150px",
                                             }}
                                         >
                                             {Object.entries(

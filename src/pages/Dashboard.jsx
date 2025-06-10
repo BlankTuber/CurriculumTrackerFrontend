@@ -416,11 +416,20 @@ const Dashboard = () => {
                                                                         "wrap",
                                                                 }}
                                                             >
-                                                                <strong>
-                                                                    {
-                                                                        nextProject.name
-                                                                    }
-                                                                </strong>
+                                                                <Link
+                                                                    to={`/project/${nextProject._id}`}
+                                                                    style={{
+                                                                        textDecoration:
+                                                                            "none",
+                                                                        color: "inherit",
+                                                                    }}
+                                                                >
+                                                                    <strong>
+                                                                        {
+                                                                            nextProject.name
+                                                                        }
+                                                                    </strong>
+                                                                </Link>
                                                                 {nextProject.identifier && (
                                                                     <span
                                                                         className="text-primary"

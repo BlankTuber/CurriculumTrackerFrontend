@@ -396,14 +396,11 @@ const ProjectDetail = () => {
                         onChange={(e) =>
                             handleUpdateProjectState(e.target.value)
                         }
-                        className="btn btn-secondary btn-small"
+                        className="form-select"
                         disabled={stateUpdateLoading}
                         style={{
-                            padding: "0.5rem",
-                            minWidth: "auto",
-                            border: "1px solid var(--border-color)",
-                            borderRadius: "6px",
-                            background: "var(--bg-tertiary)",
+                            width: "auto",
+                            minWidth: "150px",
                         }}
                     >
                         {Object.entries(PROJECT_STATE_LABELS).map(
@@ -449,7 +446,15 @@ const ProjectDetail = () => {
                                             flexWrap: "wrap",
                                         }}
                                     >
-                                        <h4>{prerequisite.name}</h4>
+                                        <Link
+                                            to={`/project/${prerequisite._id}`}
+                                            style={{
+                                                textDecoration: "none",
+                                                color: "inherit",
+                                            }}
+                                        >
+                                            <h4>{prerequisite.name}</h4>
+                                        </Link>
                                         {prerequisite.identifier && (
                                             <span
                                                 className="text-primary"

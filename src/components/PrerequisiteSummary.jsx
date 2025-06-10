@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { getLevelForStage } from "../utils/stageUtils";
 import {
     PROJECT_STATE_LABELS,
@@ -101,9 +102,16 @@ const PrerequisiteSummary = ({
                                             flexWrap: "wrap",
                                         }}
                                     >
-                                        <span style={{ fontWeight: "500" }}>
+                                        <Link
+                                            to={`/project/${prerequisite._id}`}
+                                            style={{
+                                                textDecoration: "none",
+                                                color: "inherit",
+                                                fontWeight: "500",
+                                            }}
+                                        >
                                             {prerequisite.name}
-                                        </span>
+                                        </Link>
                                         {prerequisite.identifier && (
                                             <span
                                                 className="text-primary"
