@@ -66,6 +66,79 @@ export const getNextIncompleteProject = (projects) => {
     return sortedProjects.find((p) => !isProjectCompleted(p)) || null;
 };
 
+export const getNextAvailableOrder = (
+    projects,
+    stage,
+    excludeProjectId = null
+) => {
+    if (!projects || !Array.isArray(projects)) return 1;
+
+    const projectsInStage = projects
+        .filter(
+            (p) => p.stage === parseInt(stage) && p._id !== excludeProjectId
+        )
+        .map((p) => p.order)
+        .filter((order) => order != null && order > 0)
+        .sort((a, b) => a - b);
+
+    if (projectsInStage.length === 0) return 1;
+
+    for (let i = 1; i <= projectsInStage.length + 1; i++) {
+        if (!projectsInStage.includes(i)) return i;
+    }
+    return projectsInStage.length + 1;
+};
+
+export const getUsedOrders = (projects, stage, excludeProjectId = null) => {
+    if (!projects || !Array.isArray(projects)) return [];
+
+    return projects
+        .filter(
+            (p) => p.stage === parseInt(stage) && p._id !== excludeProjectId
+        )
+        .map((p) => p.order)
+        .filter((order) => order != null && order > 0)
+        .sort((a, b) => a - b);
+};
+
+export const getNextAvailableStageRange = (levels, stageSize = 5) => {
+    if (!levels || levels.length === 0) {
+        return { stageStart: 1, stageEnd: stageSize };
+    }
+
+    const sortedLevels = levels
+        .filter((level) => level.stageStart != null && level.stageEnd != null)
+        .sort((a, b) => a.stageEnd - b.stageEnd);
+
+    if (sortedLevels.length === 0) {
+        return { stageStart: 1, stageEnd: stageSize };
+    }
+
+    const lastLevel = sortedLevels[sortedLevels.length - 1];
+    const nextStart = lastLevel.stageEnd + 1;
+
+    return {
+        stageStart: nextStart,
+        stageEnd: nextStart + stageSize - 1,
+    };
+};
+
+export const getNextAvailableLevelOrder = (levels, excludeLevelId = null) => {
+    if (!levels || !Array.isArray(levels)) return 1;
+
+    const usedOrders = levels
+        .filter((level) => level._id !== excludeLevelId && level.order != null)
+        .map((level) => level.order)
+        .sort((a, b) => a - b);
+
+    if (usedOrders.length === 0) return 1;
+
+    for (let i = 1; i <= usedOrders.length + 1; i++) {
+        if (!usedOrders.includes(i)) return i;
+    }
+    return usedOrders.length + 1;
+};
+
 export const validateStageRange = (
     stageStart,
     stageEnd,

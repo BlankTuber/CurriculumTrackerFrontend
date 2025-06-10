@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { levelAPI, curriculumAPI } from "../utils/api";
-import { validateStageRange, validateLevelOrder } from "../utils/stageUtils";
+import {
+    validateStageRange,
+    validateLevelOrder,
+    getNextAvailableStageRange,
+    getNextAvailableLevelOrder,
+    sortLevelsByOrder,
+} from "../utils/stageUtils";
 
 const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
     const isEditing = !!level;
@@ -8,9 +14,9 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
     const [formData, setFormData] = useState({
         name: level?.name || "",
         description: level?.description || "",
-        stageStart: level?.stageStart || "",
-        stageEnd: level?.stageEnd || "",
-        order: level?.order || "",
+        stageStart: level?.stageStart?.toString() || "",
+        stageEnd: level?.stageEnd?.toString() || "",
+        order: level?.order?.toString() || "",
     });
 
     const [existingLevels, setExistingLevels] = useState([]);
@@ -20,6 +26,21 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
     useEffect(() => {
         fetchCurriculumLevels();
     }, [curriculumId]);
+
+    useEffect(() => {
+        if (!isEditing && existingLevels.length >= 0 && !formData.stageStart) {
+            const defaultStageRange =
+                getNextAvailableStageRange(existingLevels);
+            const defaultOrder = getNextAvailableLevelOrder(existingLevels);
+
+            setFormData((prev) => ({
+                ...prev,
+                stageStart: defaultStageRange.stageStart.toString(),
+                stageEnd: defaultStageRange.stageEnd.toString(),
+                order: defaultOrder.toString(),
+            }));
+        }
+    }, [existingLevels, isEditing, formData.stageStart]);
 
     const fetchCurriculumLevels = async () => {
         try {
@@ -35,6 +56,81 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
         setFormData((prev) => ({
             ...prev,
             [name]: value,
+        }));
+    };
+
+    const handleStageStartChange = (e) => {
+        const stageStart = e.target.value;
+        setFormData((prev) => {
+            const newData = { ...prev, stageStart };
+
+            if (!isEditing && stageStart) {
+                const startNum = parseInt(stageStart);
+                if (!isNaN(startNum)) {
+                    newData.stageEnd = (startNum + 4).toString();
+                }
+            }
+
+            return newData;
+        });
+    };
+
+    const getDynamicSuggestedOrder = () => {
+        return getNextAvailableLevelOrder(
+            existingLevels,
+            isEditing ? level._id : null
+        );
+    };
+
+    const getDynamicUsedOrders = () => {
+        const filteredLevels = isEditing
+            ? existingLevels.filter((l) => l._id !== level._id)
+            : existingLevels;
+
+        return filteredLevels
+            .map((l) => l.order)
+            .filter((order) => order != null)
+            .sort((a, b) => a - b);
+    };
+
+    const getLevelNamePlaceholder = () => {
+        const order = parseInt(formData.order) || getDynamicSuggestedOrder();
+        const suggestions = [
+            "Foundation",
+            "Roots",
+            "Basics",
+            "Core",
+            "Fundamentals",
+            "Building",
+            "Growth",
+            "Development",
+            "Expansion",
+            "Structure",
+            "Advanced",
+            "Mastery",
+            "Expertise",
+            "Specialization",
+            "Excellence",
+        ];
+
+        if (order <= suggestions.length) {
+            return `e.g., ${suggestions[order - 1]}, Level ${order}`;
+        }
+        return `e.g., Level ${order}, Advanced Topics`;
+    };
+
+    const getExistingRangesInfo = () => {
+        if (existingLevels.length === 0) return null;
+
+        const sortedLevels = sortLevelsByOrder(existingLevels);
+        const filteredLevels = isEditing
+            ? sortedLevels.filter((l) => l._id !== level._id)
+            : sortedLevels;
+
+        return filteredLevels.map((l) => ({
+            name: l.name,
+            range: `${l.stageStart}-${l.stageEnd}`,
+            order: l.order,
         }));
     };
 
@@ -122,6 +218,10 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
         }
     };
 
+    const existingRanges = getExistingRangesInfo();
+    const usedOrders = getDynamicUsedOrders();
+    const nextRange = getNextAvailableStageRange(existingLevels);
+
     return (
         <form onSubmit={handleSubmit}>
             {error && <div className="error-message mb-1">{error}</div>}
@@ -141,7 +241,7 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                         maxLength={100}
                         required
                         disabled={loading}
-                        placeholder="e.g., The Roots, The Trunk, The Branches"
+                        placeholder={getLevelNamePlaceholder()}
                     />
                 </div>
 
@@ -159,14 +259,23 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                         min="1"
                         required
                         disabled={loading}
-                        placeholder="1"
+                        placeholder={
+                            !isEditing
+                                ? `Default: ${getDynamicSuggestedOrder()}`
+                                : "1"
+                        }
                     />
-                    <p
-                        className="text-muted"
-                        style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
-                    >
-                        Order must be unique within the curriculum
-                    </p>
+                    <div style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}>
+                        {usedOrders.length > 0 ? (
+                            <p className="text-muted">
+                                Used orders: {usedOrders.join(", ")}
+                            </p>
+                        ) : (
+                            <p className="text-muted">
+                                No existing levels - this will be the first
+                            </p>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -182,7 +291,11 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                     className="form-textarea"
                     maxLength={500}
                     disabled={loading}
-                    placeholder="Brief description of this level"
+                    placeholder={`Describe what students will learn in this level. For stages ${
+                        formData.stageStart || nextRange.stageStart
+                    }-${
+                        formData.stageEnd || nextRange.stageEnd
+                    }, what concepts and skills will be covered?`}
                     style={{ minHeight: "80px" }}
                 />
             </div>
@@ -197,13 +310,22 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                         id="stageStart"
                         name="stageStart"
                         value={formData.stageStart}
-                        onChange={handleChange}
+                        onChange={handleStageStartChange}
                         className="form-input"
                         min="1"
                         required
                         disabled={loading}
-                        placeholder="1"
+                        placeholder={nextRange.stageStart.toString()}
                     />
+                    {!isEditing && formData.stageStart && (
+                        <p
+                            className="text-muted"
+                            style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                        >
+                            Stage end will auto-update to{" "}
+                            {parseInt(formData.stageStart) + 4} (5-stage range)
+                        </p>
+                    )}
                 </div>
 
                 <div className="form-group">
@@ -220,10 +342,54 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                         min={formData.stageStart || "1"}
                         required
                         disabled={loading}
-                        placeholder="5"
+                        placeholder={
+                            formData.stageStart
+                                ? `Auto: ${parseInt(formData.stageStart) + 4}`
+                                : nextRange.stageEnd.toString()
+                        }
                     />
                 </div>
             </div>
+
+            {existingRanges && existingRanges.length > 0 && (
+                <div className="mb-1">
+                    <h4
+                        className="text-muted"
+                        style={{ fontSize: "0.9rem", marginBottom: "0.5rem" }}
+                    >
+                        Existing Level Ranges
+                    </h4>
+                    <div
+                        style={{
+                            background: "var(--bg-tertiary)",
+                            padding: "0.75rem",
+                            borderRadius: "6px",
+                            fontSize: "0.8rem",
+                        }}
+                    >
+                        {existingRanges.map((range, index) => (
+                            <div
+                                key={index}
+                                className="flex-between"
+                                style={{
+                                    marginBottom:
+                                        index < existingRanges.length - 1
+                                            ? "0.25rem"
+                                            : "0",
+                                }}
+                            >
+                                <span>
+                                    <strong>{range.name}</strong> (Order{" "}
+                                    {range.order})
+                                </span>
+                                <span className="text-muted">
+                                    Stages {range.range}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="btn-group">
                 <button

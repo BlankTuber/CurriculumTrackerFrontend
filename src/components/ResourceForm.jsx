@@ -56,7 +56,9 @@ const ResourceForm = ({
         }
 
         if (!isValidUrl(formData.link)) {
-            setError("Please provide a valid URL");
+            setError(
+                "Please provide a valid URL (must include http:// or https://)"
+            );
             return false;
         }
 
@@ -86,7 +88,6 @@ const ResourceForm = ({
             let result;
 
             if (isEditing) {
-                // Update existing resource
                 if (isProjectResource) {
                     result = await projectAPI.updateResource(
                         resource._id,
@@ -99,7 +100,6 @@ const ResourceForm = ({
                     );
                 }
             } else {
-                // Create new resource
                 if (isProjectResource) {
                     result = await projectAPI.createResource(
                         projectId,
@@ -121,6 +121,34 @@ const ResourceForm = ({
         }
     };
 
+    const getResourceTypePlaceholder = (type) => {
+        const placeholders = {
+            documentation: "Official API documentation, framework guides",
+            theory: "Computer Science concepts, design patterns",
+            book: "Programming books, technical literature",
+            "online resource": "Tutorials, blog posts, online courses",
+            video: "YouTube tutorials, conference talks",
+            tutorial: "Step-by-step guides, coding tutorials",
+            article: "Technical articles, best practices",
+            other: "Any other useful resource",
+        };
+        return placeholders[type] || "Resource name";
+    };
+
+    const getUrlPlaceholder = (type) => {
+        const placeholders = {
+            documentation: "https://docs.example.com/api",
+            theory: "https://en.wikipedia.org/wiki/Design_pattern",
+            book: "https://www.amazon.com/book-title",
+            "online resource": "https://course.example.com",
+            video: "https://youtube.com/watch?v=...",
+            tutorial: "https://tutorial.example.com",
+            article: "https://blog.example.com/article",
+            other: "https://example.com",
+        };
+        return placeholders[type] || "https://example.com";
+    };
+
     return (
         <form onSubmit={handleSubmit}>
             {error && <div className="error-message mb-1">{error}</div>}
@@ -139,7 +167,7 @@ const ResourceForm = ({
                     maxLength={100}
                     required
                     disabled={loading}
-                    placeholder="Enter resource name"
+                    placeholder={getResourceTypePlaceholder(formData.type)}
                 />
             </div>
 
@@ -162,6 +190,12 @@ const ResourceForm = ({
                         </option>
                     ))}
                 </select>
+                <p
+                    className="text-muted"
+                    style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                >
+                    Choose the type that best describes this resource
+                </p>
             </div>
 
             <div className="form-group">
@@ -177,8 +211,14 @@ const ResourceForm = ({
                     className="form-input"
                     required
                     disabled={loading}
-                    placeholder="https://example.com"
+                    placeholder={getUrlPlaceholder(formData.type)}
                 />
+                <p
+                    className="text-muted"
+                    style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                >
+                    Must be a valid URL starting with http:// or https://
+                </p>
             </div>
 
             <div className="btn-group">

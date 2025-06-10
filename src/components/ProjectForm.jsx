@@ -6,6 +6,11 @@ import {
     validateIdentifier,
     validateGithubRepo,
 } from "../utils/projectUtils";
+import {
+    getNextAvailableOrder,
+    getUsedOrders,
+    getUniqueStages,
+} from "../utils/stageUtils";
 import PrerequisiteSelector from "./PrerequisiteSelector";
 
 const RESOURCE_TYPES = [
@@ -37,19 +42,41 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     const [topicInput, setTopicInput] = useState("");
 
     const [projectResources, setProjectResources] = useState(
-        project?.projectResources || [
-            { name: "", type: "documentation", link: "" },
-        ]
+        project?.projectResources && project.projectResources.length > 0
+            ? project.projectResources
+            : []
     );
 
     const [availableProjects, setAvailableProjects] = useState([]);
     const [curriculumLevels, setCurriculumLevels] = useState([]);
+    const [allProjects, setAllProjects] = useState([]);
+    const [defaultsSet, setDefaultsSet] = useState(isEditing);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
         fetchAvailableProjects();
     }, []);
+
+    useEffect(() => {
+        if (!defaultsSet && allProjects.length >= 0) {
+            setInitialDefaults();
+            setDefaultsSet(true);
+        }
+    }, [allProjects, defaultsSet, isEditing]);
+
+    useEffect(() => {
+        if (formData.stage && !isEditing && defaultsSet) {
+            const defaultOrder = getNextAvailableOrder(
+                allProjects,
+                formData.stage
+            );
+            setFormData((prev) => ({
+                ...prev,
+                order: defaultOrder.toString(),
+            }));
+        }
+    }, [formData.stage, allProjects, isEditing, defaultsSet]);
 
     const fetchAvailableProjects = async () => {
         try {
@@ -59,6 +86,9 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                     p._id !== project?._id && p.curriculum._id === curriculumId
             );
             setAvailableProjects(filtered);
+            setAllProjects(
+                data.projects.filter((p) => p.curriculum._id === curriculumId)
+            );
 
             if (filtered.length > 0) {
                 setCurriculumLevels(filtered[0].curriculum?.levels || []);
@@ -68,12 +98,45 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         }
     };
 
+    const setInitialDefaults = () => {
+        if (isEditing) return;
+
+        const usedStages = getUniqueStages(allProjects);
+        const defaultStage =
+            usedStages.length > 0 ? Math.max(...usedStages) : 1;
+        const defaultOrder = getNextAvailableOrder(allProjects, defaultStage);
+
+        setFormData((prev) => ({
+            ...prev,
+            stage: defaultStage.toString(),
+            order: defaultOrder.toString(),
+        }));
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
             [name]: value,
         }));
+    };
+
+    const handleStageChange = (e) => {
+        const stage = e.target.value;
+        setFormData((prev) => {
+            const newData = { ...prev, stage };
+
+            if (!isEditing && stage) {
+                const defaultOrder = getNextAvailableOrder(
+                    allProjects,
+                    stage,
+                    project?._id
+                );
+                newData.order = defaultOrder.toString();
+            }
+
+            return newData;
+        });
     };
 
     const handlePrerequisiteChange = (newSelection) => {
@@ -124,9 +187,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     };
 
     const removeResource = (index) => {
-        if (projectResources.length > 1) {
-            setProjectResources((prev) => prev.filter((_, i) => i !== index));
-        }
+        setProjectResources((prev) => prev.filter((_, i) => i !== index));
     };
 
     const validateForm = () => {
@@ -175,9 +236,20 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
             return false;
         }
 
-        if (formData.order && (isNaN(formData.order) || formData.order < 1)) {
-            setError("Order must be a positive number");
-            return false;
+        if (formData.order) {
+            const order = parseInt(formData.order);
+            if (isNaN(order) || order < 1) {
+                setError("Order must be a positive number");
+                return false;
+            }
+
+            const usedOrders = getUsedOrders(allProjects, stage, project?._id);
+            if (usedOrders.includes(order)) {
+                setError(
+                    `Order ${order} is already used by another project in stage ${stage}`
+                );
+                return false;
+            }
         }
 
         for (let i = 0; i < formData.topics.length; i++) {
@@ -191,10 +263,19 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
 
         for (let i = 0; i < projectResources.length; i++) {
             const resource = projectResources[i];
-            if (
-                resource.name.trim() &&
-                (!resource.link.trim() || !isValidUrl(resource.link))
-            ) {
+            if (resource.name.trim() && !resource.link.trim()) {
+                setError(
+                    `Resource ${i + 1}: URL is required when name is provided`
+                );
+                return false;
+            }
+            if (resource.link.trim() && !resource.name.trim()) {
+                setError(
+                    `Resource ${i + 1}: Name is required when URL is provided`
+                );
+                return false;
+            }
+            if (resource.name.trim() && !isValidUrl(resource.link)) {
                 setError(`Resource ${i + 1}: Invalid URL`);
                 return false;
             }
@@ -249,6 +330,33 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         }
     };
 
+    const getCurrentStageUsedOrders = () => {
+        if (!formData.stage) return [];
+        return getUsedOrders(allProjects, formData.stage, project?._id);
+    };
+
+    const getStageInfo = () => {
+        if (!formData.stage) return null;
+
+        const stage = parseInt(formData.stage);
+        const projectsInStage = allProjects.filter((p) => p.stage === stage);
+        const usedOrders = getCurrentStageUsedOrders();
+        const availableOrder = getNextAvailableOrder(
+            allProjects,
+            stage,
+            project?._id
+        );
+
+        return {
+            projectCount: projectsInStage.length,
+            usedOrders,
+            availableOrder,
+        };
+    };
+
+    const usedStages = getUniqueStages(allProjects);
+    const stageInfo = getStageInfo();
+
     return (
         <form onSubmit={handleSubmit}>
             {error && <div className="error-message mb-1">{error}</div>}
@@ -268,6 +376,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                         maxLength={100}
                         required
                         disabled={loading}
+                        placeholder="e.g., Todo List App, Portfolio Website, Blog System"
                     />
                 </div>
 
@@ -308,7 +417,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                     maxLength={2000}
                     required
                     disabled={loading}
-                    placeholder="Describe your project..."
+                    placeholder="Describe what this project does, what technologies you'll use, and what you'll learn from building it..."
                     style={{ minHeight: "100px" }}
                 />
             </div>
@@ -327,7 +436,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                         className="form-input"
                         maxLength={100}
                         disabled={loading}
-                        placeholder="repository-name"
+                        placeholder="todo-list-app"
                     />
                     <p
                         className="text-muted"
@@ -351,7 +460,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                             className="form-input"
                             maxLength={50}
                             disabled={loading}
-                            placeholder="Add a topic and press Enter"
+                            placeholder="e.g., React, Authentication, REST API"
                             style={{ flex: 1 }}
                         />
                         <button
@@ -415,13 +524,25 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                         id="stage"
                         name="stage"
                         value={formData.stage}
-                        onChange={handleChange}
+                        onChange={handleStageChange}
                         className="form-input"
                         min="1"
                         required
                         disabled={loading}
-                        placeholder="1"
+                        placeholder={
+                            usedStages.length > 0
+                                ? `Current stages: ${usedStages.join(", ")}`
+                                : "1"
+                        }
                     />
+                    {usedStages.length > 0 && (
+                        <p
+                            className="text-muted"
+                            style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                        >
+                            Existing stages: {usedStages.join(", ")}
+                        </p>
+                    )}
                 </div>
 
                 <div className="form-group">
@@ -437,8 +558,28 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                         className="form-input"
                         min="1"
                         disabled={loading}
-                        placeholder="Project order"
+                        placeholder={
+                            stageInfo
+                                ? `Next available: ${stageInfo.availableOrder}`
+                                : "1"
+                        }
                     />
+                    {stageInfo && (
+                        <div
+                            style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                        >
+                            {stageInfo.usedOrders.length > 0 ? (
+                                <p className="text-muted">
+                                    Used orders in stage {formData.stage}:{" "}
+                                    {stageInfo.usedOrders.join(", ")}
+                                </p>
+                            ) : (
+                                <p className="text-muted">
+                                    No other projects in stage {formData.stage}
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="form-group">
@@ -488,7 +629,9 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
 
             <div className="form-group">
                 <div className="flex-between mb-1">
-                    <label className="form-label">Project Resources</label>
+                    <label className="form-label">
+                        Project Resources (optional)
+                    </label>
                     <button
                         type="button"
                         onClick={addResource}
@@ -499,12 +642,24 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                     </button>
                 </div>
 
-                <div className="grid grid-2">
-                    {projectResources.map((resource, index) => (
-                        <div key={index} className="card">
-                            <div className="flex-between mb-1">
-                                <h4>Resource {index + 1}</h4>
-                                {projectResources.length > 1 && (
+                {projectResources.length === 0 ? (
+                    <p
+                        className="text-muted text-center"
+                        style={{
+                            padding: "2rem",
+                            border: "1px dashed var(--border-color)",
+                            borderRadius: "6px",
+                        }}
+                    >
+                        No project resources yet. Click "Add Resource" to add
+                        project-specific resources.
+                    </p>
+                ) : (
+                    <div className="grid grid-2">
+                        {projectResources.map((resource, index) => (
+                            <div key={index} className="card">
+                                <div className="flex-between mb-1">
+                                    <h4>Resource {index + 1}</h4>
                                     <button
                                         type="button"
                                         onClick={() => removeResource(index)}
@@ -513,73 +668,79 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                                     >
                                         Remove
                                     </button>
-                                )}
-                            </div>
-
-                            <div className="form-group">
-                                <label className="form-label">Name</label>
-                                <input
-                                    type="text"
-                                    value={resource.name}
-                                    onChange={(e) =>
-                                        handleResourceChange(
-                                            index,
-                                            "name",
-                                            e.target.value
-                                        )
-                                    }
-                                    className="form-input"
-                                    maxLength={100}
-                                    disabled={loading}
-                                    placeholder="Resource name"
-                                />
-                            </div>
-
-                            <div className="grid grid-2">
-                                <div className="form-group">
-                                    <label className="form-label">Type</label>
-                                    <select
-                                        value={resource.type}
-                                        onChange={(e) =>
-                                            handleResourceChange(
-                                                index,
-                                                "type",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="form-select"
-                                        disabled={loading}
-                                    >
-                                        {RESOURCE_TYPES.map((type) => (
-                                            <option key={type} value={type}>
-                                                {type.charAt(0).toUpperCase() +
-                                                    type.slice(1)}
-                                            </option>
-                                        ))}
-                                    </select>
                                 </div>
 
                                 <div className="form-group">
-                                    <label className="form-label">URL</label>
+                                    <label className="form-label">Name</label>
                                     <input
-                                        type="url"
-                                        value={resource.link}
+                                        type="text"
+                                        value={resource.name}
                                         onChange={(e) =>
                                             handleResourceChange(
                                                 index,
-                                                "link",
+                                                "name",
                                                 e.target.value
                                             )
                                         }
                                         className="form-input"
+                                        maxLength={100}
                                         disabled={loading}
-                                        placeholder="https://example.com"
+                                        placeholder="Resource name"
                                     />
                                 </div>
+
+                                <div className="grid grid-2">
+                                    <div className="form-group">
+                                        <label className="form-label">
+                                            Type
+                                        </label>
+                                        <select
+                                            value={resource.type}
+                                            onChange={(e) =>
+                                                handleResourceChange(
+                                                    index,
+                                                    "type",
+                                                    e.target.value
+                                                )
+                                            }
+                                            className="form-select"
+                                            disabled={loading}
+                                        >
+                                            {RESOURCE_TYPES.map((type) => (
+                                                <option key={type} value={type}>
+                                                    {type
+                                                        .charAt(0)
+                                                        .toUpperCase() +
+                                                        type.slice(1)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">
+                                            URL
+                                        </label>
+                                        <input
+                                            type="url"
+                                            value={resource.link}
+                                            onChange={(e) =>
+                                                handleResourceChange(
+                                                    index,
+                                                    "link",
+                                                    e.target.value
+                                                )
+                                            }
+                                            className="form-input"
+                                            disabled={loading}
+                                            placeholder="https://example.com"
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className="btn-group">
