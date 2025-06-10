@@ -253,42 +253,24 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         <form onSubmit={handleSubmit}>
             {error && <div className="error-message mb-1">{error}</div>}
 
-            <div className="form-group">
-                <label className="form-label" htmlFor="name">
-                    Project Name *
-                </label>
-                <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="form-input"
-                    maxLength={100}
-                    required
-                    disabled={loading}
-                />
-            </div>
-
-            <div className="form-group">
-                <label className="form-label" htmlFor="description">
-                    Description *
-                </label>
-                <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    className="form-textarea"
-                    maxLength={2000}
-                    required
-                    disabled={loading}
-                    placeholder="Describe your project..."
-                    style={{ minHeight: "120px" }}
-                />
-            </div>
-
             <div className="grid grid-2">
+                <div className="form-group">
+                    <label className="form-label" htmlFor="name">
+                        Project Name *
+                    </label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="form-input"
+                        maxLength={100}
+                        required
+                        disabled={loading}
+                    />
+                </div>
+
                 <div className="form-group">
                     <label className="form-label" htmlFor="identifier">
                         Identifier (optional)
@@ -311,7 +293,27 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                         Letters, numbers, underscores, and hyphens only
                     </p>
                 </div>
+            </div>
 
+            <div className="form-group">
+                <label className="form-label" htmlFor="description">
+                    Description *
+                </label>
+                <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    className="form-textarea"
+                    maxLength={2000}
+                    required
+                    disabled={loading}
+                    placeholder="Describe your project..."
+                    style={{ minHeight: "100px" }}
+                />
+            </div>
+
+            <div className="grid grid-2">
                 <div className="form-group">
                     <label className="form-label" htmlFor="githubRepo">
                         GitHub Repository (optional)
@@ -334,73 +336,73 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                         Repository name only (not full URL)
                     </p>
                 </div>
-            </div>
 
-            <div className="form-group">
-                <label className="form-label">Topics</label>
-                <div
-                    className="flex"
-                    style={{ gap: "0.5rem", marginBottom: "0.5rem" }}
-                >
-                    <input
-                        type="text"
-                        value={topicInput}
-                        onChange={(e) => setTopicInput(e.target.value)}
-                        onKeyPress={handleTopicInputKeyPress}
-                        className="form-input"
-                        maxLength={50}
-                        disabled={loading}
-                        placeholder="Add a topic and press Enter"
-                        style={{ flex: 1 }}
-                    />
-                    <button
-                        type="button"
-                        onClick={handleTopicAdd}
-                        className="btn btn-secondary btn-small"
-                        disabled={loading || !topicInput.trim()}
-                    >
-                        Add
-                    </button>
-                </div>
-                {formData.topics.length > 0 && (
+                <div className="form-group">
+                    <label className="form-label">Topics</label>
                     <div
                         className="flex"
-                        style={{ gap: "0.5rem", flexWrap: "wrap" }}
+                        style={{ gap: "0.5rem", marginBottom: "0.5rem" }}
                     >
-                        {formData.topics.map((topic, index) => (
-                            <span
-                                key={index}
-                                className="tag"
-                                style={{
-                                    background: "var(--bg-tertiary)",
-                                    padding: "0.25rem 0.5rem",
-                                    borderRadius: "4px",
-                                    fontSize: "0.8rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.25rem",
-                                }}
-                            >
-                                {topic}
-                                <button
-                                    type="button"
-                                    onClick={() => handleTopicRemove(topic)}
-                                    disabled={loading}
+                        <input
+                            type="text"
+                            value={topicInput}
+                            onChange={(e) => setTopicInput(e.target.value)}
+                            onKeyPress={handleTopicInputKeyPress}
+                            className="form-input"
+                            maxLength={50}
+                            disabled={loading}
+                            placeholder="Add a topic and press Enter"
+                            style={{ flex: 1 }}
+                        />
+                        <button
+                            type="button"
+                            onClick={handleTopicAdd}
+                            className="btn btn-secondary btn-small"
+                            disabled={loading || !topicInput.trim()}
+                        >
+                            Add
+                        </button>
+                    </div>
+                    {formData.topics.length > 0 && (
+                        <div
+                            className="flex"
+                            style={{ gap: "0.5rem", flexWrap: "wrap" }}
+                        >
+                            {formData.topics.map((topic, index) => (
+                                <span
+                                    key={index}
+                                    className="tag"
                                     style={{
-                                        background: "none",
-                                        border: "none",
-                                        color: "var(--text-muted)",
-                                        cursor: "pointer",
-                                        padding: "0",
-                                        fontSize: "0.9rem",
+                                        background: "var(--bg-tertiary)",
+                                        padding: "0.25rem 0.5rem",
+                                        borderRadius: "4px",
+                                        fontSize: "0.8rem",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "0.25rem",
                                     }}
                                 >
-                                    ×
-                                </button>
-                            </span>
-                        ))}
-                    </div>
-                )}
+                                    {topic}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleTopicRemove(topic)}
+                                        disabled={loading}
+                                        style={{
+                                            background: "none",
+                                            border: "none",
+                                            color: "var(--text-muted)",
+                                            cursor: "pointer",
+                                            padding: "0",
+                                            fontSize: "0.9rem",
+                                        }}
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-3">
@@ -497,83 +499,87 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                     </button>
                 </div>
 
-                {projectResources.map((resource, index) => (
-                    <div key={index} className="card mb-1">
-                        <div className="flex-between mb-1">
-                            <h4>Resource {index + 1}</h4>
-                            {projectResources.length > 1 && (
-                                <button
-                                    type="button"
-                                    onClick={() => removeResource(index)}
-                                    className="btn btn-danger btn-small"
+                <div className="grid grid-2">
+                    {projectResources.map((resource, index) => (
+                        <div key={index} className="card">
+                            <div className="flex-between mb-1">
+                                <h4>Resource {index + 1}</h4>
+                                {projectResources.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeResource(index)}
+                                        className="btn btn-danger btn-small"
+                                        disabled={loading}
+                                    >
+                                        Remove
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Name</label>
+                                <input
+                                    type="text"
+                                    value={resource.name}
+                                    onChange={(e) =>
+                                        handleResourceChange(
+                                            index,
+                                            "name",
+                                            e.target.value
+                                        )
+                                    }
+                                    className="form-input"
+                                    maxLength={100}
                                     disabled={loading}
-                                >
-                                    Remove
-                                </button>
-                            )}
-                        </div>
+                                    placeholder="Resource name"
+                                />
+                            </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Name</label>
-                            <input
-                                type="text"
-                                value={resource.name}
-                                onChange={(e) =>
-                                    handleResourceChange(
-                                        index,
-                                        "name",
-                                        e.target.value
-                                    )
-                                }
-                                className="form-input"
-                                maxLength={100}
-                                disabled={loading}
-                                placeholder="Resource name"
-                            />
-                        </div>
+                            <div className="grid grid-2">
+                                <div className="form-group">
+                                    <label className="form-label">Type</label>
+                                    <select
+                                        value={resource.type}
+                                        onChange={(e) =>
+                                            handleResourceChange(
+                                                index,
+                                                "type",
+                                                e.target.value
+                                            )
+                                        }
+                                        className="form-select"
+                                        disabled={loading}
+                                    >
+                                        {RESOURCE_TYPES.map((type) => (
+                                            <option key={type} value={type}>
+                                                {type.charAt(0).toUpperCase() +
+                                                    type.slice(1)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Type</label>
-                            <select
-                                value={resource.type}
-                                onChange={(e) =>
-                                    handleResourceChange(
-                                        index,
-                                        "type",
-                                        e.target.value
-                                    )
-                                }
-                                className="form-select"
-                                disabled={loading}
-                            >
-                                {RESOURCE_TYPES.map((type) => (
-                                    <option key={type} value={type}>
-                                        {type.charAt(0).toUpperCase() +
-                                            type.slice(1)}
-                                    </option>
-                                ))}
-                            </select>
+                                <div className="form-group">
+                                    <label className="form-label">URL</label>
+                                    <input
+                                        type="url"
+                                        value={resource.link}
+                                        onChange={(e) =>
+                                            handleResourceChange(
+                                                index,
+                                                "link",
+                                                e.target.value
+                                            )
+                                        }
+                                        className="form-input"
+                                        disabled={loading}
+                                        placeholder="https://example.com"
+                                    />
+                                </div>
+                            </div>
                         </div>
-
-                        <div className="form-group">
-                            <label className="form-label">URL</label>
-                            <input
-                                type="url"
-                                value={resource.link}
-                                onChange={(e) =>
-                                    handleResourceChange(
-                                        index,
-                                        "link",
-                                        e.target.value
-                                    )
-                                }
-                                className="form-input"
-                                disabled={loading}
-                                placeholder="https://example.com"
-                            />
-                        </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
 
             <div className="btn-group">

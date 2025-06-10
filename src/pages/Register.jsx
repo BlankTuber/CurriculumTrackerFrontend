@@ -97,79 +97,92 @@ const Register = () => {
                 )}
 
                 <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="username">
-                            Username
-                        </label>
-                        <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            value={formData.username}
-                            onChange={handleChange}
-                            className="form-input"
-                            required
-                            disabled={loading}
-                            placeholder="3-30 characters, letters, numbers, and underscores only"
-                        />
+                    <div className="grid grid-2">
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="username">
+                                Username
+                            </label>
+                            <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                value={formData.username}
+                                onChange={handleChange}
+                                className="form-input"
+                                required
+                                disabled={loading}
+                                placeholder="3-30 characters, letters, numbers, and underscores only"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label
+                                className="form-label"
+                                htmlFor="githubUsername"
+                            >
+                                GitHub Username (optional)
+                            </label>
+                            <input
+                                type="text"
+                                id="githubUsername"
+                                name="githubUsername"
+                                value={formData.githubUsername}
+                                onChange={handleChange}
+                                className="form-input"
+                                maxLength={39}
+                                disabled={loading}
+                                placeholder="your-github-username"
+                            />
+                            <p
+                                className="text-muted"
+                                style={{
+                                    fontSize: "0.8rem",
+                                    marginTop: "0.25rem",
+                                }}
+                            >
+                                Used to automatically generate GitHub links for
+                                your projects
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="githubUsername">
-                            GitHub Username (optional)
-                        </label>
-                        <input
-                            type="text"
-                            id="githubUsername"
-                            name="githubUsername"
-                            value={formData.githubUsername}
-                            onChange={handleChange}
-                            className="form-input"
-                            maxLength={39}
-                            disabled={loading}
-                            placeholder="your-github-username"
-                        />
-                        <p
-                            className="text-muted"
-                            style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
-                        >
-                            Used to automatically generate GitHub links for your
-                            projects
-                        </p>
-                    </div>
+                    <div className="grid grid-2">
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="password">
+                                Password
+                            </label>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                className="form-input"
+                                required
+                                disabled={loading}
+                                placeholder="At least 6 characters"
+                            />
+                        </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="password">
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className="form-input"
-                            required
-                            disabled={loading}
-                            placeholder="At least 6 characters"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="confirmPassword">
-                            Confirm Password
-                        </label>
-                        <input
-                            type="password"
-                            id="confirmPassword"
-                            name="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            className="form-input"
-                            required
-                            disabled={loading}
-                            placeholder="Re-enter your password"
-                        />
+                        <div className="form-group">
+                            <label
+                                className="form-label"
+                                htmlFor="confirmPassword"
+                            >
+                                Confirm Password
+                            </label>
+                            <input
+                                type="password"
+                                id="confirmPassword"
+                                name="confirmPassword"
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                                className="form-input"
+                                required
+                                disabled={loading}
+                                placeholder="Re-enter your password"
+                            />
+                        </div>
                     </div>
 
                     <button

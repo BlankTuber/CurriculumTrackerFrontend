@@ -72,7 +72,6 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
             return false;
         }
 
-        // Validate resources
         for (let i = 0; i < resources.length; i++) {
             const resource = resources[i];
             if (
@@ -107,7 +106,6 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
         setError("");
 
         try {
-            // Filter out empty resources
             const validResources = resources.filter(
                 (resource) => resource.name.trim() && resource.link.trim()
             );
@@ -136,37 +134,40 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
         <form onSubmit={handleSubmit}>
             {error && <div className="error-message mb-1">{error}</div>}
 
-            <div className="form-group">
-                <label className="form-label" htmlFor="name">
-                    Curriculum Name *
-                </label>
-                <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="form-input"
-                    maxLength={100}
-                    required
-                    disabled={loading}
-                />
-            </div>
+            <div className="grid grid-2">
+                <div className="form-group">
+                    <label className="form-label" htmlFor="name">
+                        Curriculum Name *
+                    </label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="form-input"
+                        maxLength={100}
+                        required
+                        disabled={loading}
+                    />
+                </div>
 
-            <div className="form-group">
-                <label className="form-label" htmlFor="description">
-                    Description
-                </label>
-                <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    className="form-textarea"
-                    maxLength={1000}
-                    disabled={loading}
-                    placeholder="Optional description of your curriculum"
-                />
+                <div className="form-group">
+                    <label className="form-label" htmlFor="description">
+                        Description
+                    </label>
+                    <textarea
+                        id="description"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        className="form-textarea"
+                        maxLength={1000}
+                        disabled={loading}
+                        placeholder="Optional description of your curriculum"
+                        style={{ minHeight: "80px" }}
+                    />
+                </div>
             </div>
 
             <div className="form-group">
@@ -182,83 +183,87 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
                     </button>
                 </div>
 
-                {resources.map((resource, index) => (
-                    <div key={index} className="card mb-1">
-                        <div className="flex-between mb-1">
-                            <h4>Resource {index + 1}</h4>
-                            {resources.length > 1 && (
-                                <button
-                                    type="button"
-                                    onClick={() => removeResource(index)}
-                                    className="btn btn-danger btn-small"
+                <div className="grid grid-2">
+                    {resources.map((resource, index) => (
+                        <div key={index} className="card">
+                            <div className="flex-between mb-1">
+                                <h4>Resource {index + 1}</h4>
+                                {resources.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeResource(index)}
+                                        className="btn btn-danger btn-small"
+                                        disabled={loading}
+                                    >
+                                        Remove
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Name</label>
+                                <input
+                                    type="text"
+                                    value={resource.name}
+                                    onChange={(e) =>
+                                        handleResourceChange(
+                                            index,
+                                            "name",
+                                            e.target.value
+                                        )
+                                    }
+                                    className="form-input"
+                                    maxLength={100}
                                     disabled={loading}
-                                >
-                                    Remove
-                                </button>
-                            )}
-                        </div>
+                                    placeholder="Resource name"
+                                />
+                            </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Name</label>
-                            <input
-                                type="text"
-                                value={resource.name}
-                                onChange={(e) =>
-                                    handleResourceChange(
-                                        index,
-                                        "name",
-                                        e.target.value
-                                    )
-                                }
-                                className="form-input"
-                                maxLength={100}
-                                disabled={loading}
-                                placeholder="Resource name"
-                            />
-                        </div>
+                            <div className="grid grid-2">
+                                <div className="form-group">
+                                    <label className="form-label">Type</label>
+                                    <select
+                                        value={resource.type}
+                                        onChange={(e) =>
+                                            handleResourceChange(
+                                                index,
+                                                "type",
+                                                e.target.value
+                                            )
+                                        }
+                                        className="form-select"
+                                        disabled={loading}
+                                    >
+                                        {RESOURCE_TYPES.map((type) => (
+                                            <option key={type} value={type}>
+                                                {type.charAt(0).toUpperCase() +
+                                                    type.slice(1)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Type</label>
-                            <select
-                                value={resource.type}
-                                onChange={(e) =>
-                                    handleResourceChange(
-                                        index,
-                                        "type",
-                                        e.target.value
-                                    )
-                                }
-                                className="form-select"
-                                disabled={loading}
-                            >
-                                {RESOURCE_TYPES.map((type) => (
-                                    <option key={type} value={type}>
-                                        {type.charAt(0).toUpperCase() +
-                                            type.slice(1)}
-                                    </option>
-                                ))}
-                            </select>
+                                <div className="form-group">
+                                    <label className="form-label">URL</label>
+                                    <input
+                                        type="url"
+                                        value={resource.link}
+                                        onChange={(e) =>
+                                            handleResourceChange(
+                                                index,
+                                                "link",
+                                                e.target.value
+                                            )
+                                        }
+                                        className="form-input"
+                                        disabled={loading}
+                                        placeholder="https://example.com"
+                                    />
+                                </div>
+                            </div>
                         </div>
-
-                        <div className="form-group">
-                            <label className="form-label">URL</label>
-                            <input
-                                type="url"
-                                value={resource.link}
-                                onChange={(e) =>
-                                    handleResourceChange(
-                                        index,
-                                        "link",
-                                        e.target.value
-                                    )
-                                }
-                                className="form-input"
-                                disabled={loading}
-                                placeholder="https://example.com"
-                            />
-                        </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
 
             <div className="btn-group">

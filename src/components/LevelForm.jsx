@@ -126,22 +126,48 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
         <form onSubmit={handleSubmit}>
             {error && <div className="error-message mb-1">{error}</div>}
 
-            <div className="form-group">
-                <label className="form-label" htmlFor="name">
-                    Level Name *
-                </label>
-                <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="form-input"
-                    maxLength={100}
-                    required
-                    disabled={loading}
-                    placeholder="e.g., The Roots, The Trunk, The Branches"
-                />
+            <div className="grid grid-2">
+                <div className="form-group">
+                    <label className="form-label" htmlFor="name">
+                        Level Name *
+                    </label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="form-input"
+                        maxLength={100}
+                        required
+                        disabled={loading}
+                        placeholder="e.g., The Roots, The Trunk, The Branches"
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label" htmlFor="order">
+                        Order *
+                    </label>
+                    <input
+                        type="number"
+                        id="order"
+                        name="order"
+                        value={formData.order}
+                        onChange={handleChange}
+                        className="form-input"
+                        min="1"
+                        required
+                        disabled={loading}
+                        placeholder="1"
+                    />
+                    <p
+                        className="text-muted"
+                        style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
+                    >
+                        Order must be unique within the curriculum
+                    </p>
+                </div>
             </div>
 
             <div className="form-group">
@@ -197,30 +223,6 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                         placeholder="5"
                     />
                 </div>
-            </div>
-
-            <div className="form-group">
-                <label className="form-label" htmlFor="order">
-                    Order *
-                </label>
-                <input
-                    type="number"
-                    id="order"
-                    name="order"
-                    value={formData.order}
-                    onChange={handleChange}
-                    className="form-input"
-                    min="1"
-                    required
-                    disabled={loading}
-                    placeholder="1"
-                />
-                <p
-                    className="text-muted"
-                    style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
-                >
-                    Order must be unique within the curriculum
-                </p>
             </div>
 
             <div className="btn-group">

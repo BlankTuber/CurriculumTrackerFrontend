@@ -347,55 +347,63 @@ const UserProfile = () => {
                         <div className="error-message mb-1">{updateError}</div>
                     )}
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="username">
-                            New Username (optional)
-                        </label>
-                        <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            value={updateForm.username}
-                            onChange={(e) =>
-                                setUpdateForm((prev) => ({
-                                    ...prev,
-                                    username: e.target.value,
-                                }))
-                            }
-                            className="form-input"
-                            maxLength={30}
-                            disabled={updateLoading}
-                            placeholder="Leave blank to keep current username"
-                        />
-                    </div>
+                    <div className="grid grid-2">
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="username">
+                                New Username (optional)
+                            </label>
+                            <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                value={updateForm.username}
+                                onChange={(e) =>
+                                    setUpdateForm((prev) => ({
+                                        ...prev,
+                                        username: e.target.value,
+                                    }))
+                                }
+                                className="form-input"
+                                maxLength={30}
+                                disabled={updateLoading}
+                                placeholder="Leave blank to keep current username"
+                            />
+                        </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="githubUsername">
-                            GitHub Username (optional)
-                        </label>
-                        <input
-                            type="text"
-                            id="githubUsername"
-                            name="githubUsername"
-                            value={updateForm.githubUsername}
-                            onChange={(e) =>
-                                setUpdateForm((prev) => ({
-                                    ...prev,
-                                    githubUsername: e.target.value,
-                                }))
-                            }
-                            className="form-input"
-                            maxLength={39}
-                            disabled={updateLoading}
-                            placeholder="your-github-username"
-                        />
-                        <p
-                            className="text-muted"
-                            style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}
-                        >
-                            Used to automatically generate GitHub links for your
-                            projects. Leave blank to remove.
-                        </p>
+                        <div className="form-group">
+                            <label
+                                className="form-label"
+                                htmlFor="githubUsername"
+                            >
+                                GitHub Username (optional)
+                            </label>
+                            <input
+                                type="text"
+                                id="githubUsername"
+                                name="githubUsername"
+                                value={updateForm.githubUsername}
+                                onChange={(e) =>
+                                    setUpdateForm((prev) => ({
+                                        ...prev,
+                                        githubUsername: e.target.value,
+                                    }))
+                                }
+                                className="form-input"
+                                maxLength={39}
+                                disabled={updateLoading}
+                                placeholder="your-github-username"
+                            />
+                            <p
+                                className="text-muted"
+                                style={{
+                                    fontSize: "0.8rem",
+                                    marginTop: "0.25rem",
+                                }}
+                            >
+                                Used to automatically generate GitHub links for
+                                your projects. Leave blank to remove.
+                            </p>
+                        </div>
                     </div>
 
                     <div className="form-group">
@@ -418,52 +426,54 @@ const UserProfile = () => {
                         />
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label" htmlFor="newPassword">
-                            New Password (optional)
-                        </label>
-                        <input
-                            type="password"
-                            id="newPassword"
-                            name="newPassword"
-                            value={updateForm.newPassword}
-                            onChange={(e) =>
-                                setUpdateForm((prev) => ({
-                                    ...prev,
-                                    newPassword: e.target.value,
-                                }))
-                            }
-                            className="form-input"
-                            disabled={updateLoading}
-                            placeholder="Leave blank to keep current password"
-                        />
-                    </div>
-
-                    {updateForm.newPassword && (
+                    <div className="grid grid-2">
                         <div className="form-group">
-                            <label
-                                className="form-label"
-                                htmlFor="confirmPassword"
-                            >
-                                Confirm New Password
+                            <label className="form-label" htmlFor="newPassword">
+                                New Password (optional)
                             </label>
                             <input
                                 type="password"
-                                id="confirmPassword"
-                                name="confirmPassword"
-                                value={updateForm.confirmPassword}
+                                id="newPassword"
+                                name="newPassword"
+                                value={updateForm.newPassword}
                                 onChange={(e) =>
                                     setUpdateForm((prev) => ({
                                         ...prev,
-                                        confirmPassword: e.target.value,
+                                        newPassword: e.target.value,
                                     }))
                                 }
                                 className="form-input"
                                 disabled={updateLoading}
-                                placeholder="Re-enter your new password"
+                                placeholder="Leave blank to keep current password"
                             />
                         </div>
-                    )}
+
+                        {updateForm.newPassword && (
+                            <div className="form-group">
+                                <label
+                                    className="form-label"
+                                    htmlFor="confirmPassword"
+                                >
+                                    Confirm New Password
+                                </label>
+                                <input
+                                    type="password"
+                                    id="confirmPassword"
+                                    name="confirmPassword"
+                                    value={updateForm.confirmPassword}
+                                    onChange={(e) =>
+                                        setUpdateForm((prev) => ({
+                                            ...prev,
+                                            confirmPassword: e.target.value,
+                                        }))
+                                    }
+                                    className="form-input"
+                                    disabled={updateLoading}
+                                    placeholder="Re-enter your new password"
+                                />
+                            </div>
+                        )}
+                    </div>
 
                     <div className="btn-group">
                         <button

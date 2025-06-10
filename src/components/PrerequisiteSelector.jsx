@@ -212,46 +212,23 @@ const PrerequisiteSelector = ({
 
                                     {projects.map((project) => (
                                         <div key={project._id} className="mb-1">
-                                            <label
-                                                style={{
-                                                    display: "flex",
-                                                    alignItems: "flex-start",
-                                                    cursor: disabled
-                                                        ? "default"
-                                                        : "pointer",
-                                                    padding: "0.5rem",
-                                                    borderRadius: "4px",
-                                                    transition:
-                                                        "background-color 0.2s ease",
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    if (!disabled) {
-                                                        e.target.style.backgroundColor =
-                                                            "var(--hover-bg)";
-                                                    }
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.target.style.backgroundColor =
-                                                        "transparent";
-                                                }}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedPrerequisites.includes(
+                                            <div
+                                                className={`selection-card ${
+                                                    selectedPrerequisites.includes(
                                                         project._id
-                                                    )}
-                                                    onChange={() =>
-                                                        handleTogglePrerequisite(
-                                                            project._id
-                                                        )
-                                                    }
-                                                    disabled={disabled}
-                                                    style={{
-                                                        marginRight: "0.75rem",
-                                                        marginTop: "0.25rem",
-                                                        flexShrink: 0,
-                                                    }}
-                                                />
+                                                    )
+                                                        ? "selected"
+                                                        : ""
+                                                } ${
+                                                    disabled ? "disabled" : ""
+                                                }`}
+                                                onClick={() =>
+                                                    !disabled &&
+                                                    handleTogglePrerequisite(
+                                                        project._id
+                                                    )
+                                                }
+                                            >
                                                 <div style={{ flex: 1 }}>
                                                     <div
                                                         className="flex"
@@ -319,6 +296,21 @@ const PrerequisiteSelector = ({
                                                                 ]
                                                             }
                                                         </span>
+                                                        {selectedPrerequisites.includes(
+                                                            project._id
+                                                        ) && (
+                                                            <span
+                                                                className="text-success"
+                                                                style={{
+                                                                    fontSize:
+                                                                        "0.9rem",
+                                                                    marginLeft:
+                                                                        "auto",
+                                                                }}
+                                                            >
+                                                                ✓
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <p
                                                         className="text-muted"
@@ -354,7 +346,7 @@ const PrerequisiteSelector = ({
                                                                             }
                                                                             style={{
                                                                                 background:
-                                                                                    "var(--bg-tertiary)",
+                                                                                    "var(--bg-primary)",
                                                                                 padding:
                                                                                     "0.125rem 0.25rem",
                                                                                 borderRadius:
@@ -373,7 +365,7 @@ const PrerequisiteSelector = ({
                                                             </div>
                                                         )}
                                                 </div>
-                                            </label>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
