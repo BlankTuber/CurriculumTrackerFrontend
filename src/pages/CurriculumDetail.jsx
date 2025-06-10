@@ -49,8 +49,11 @@ const CurriculumDetail = () => {
     const [levelToDelete, setLevelToDelete] = useState(null);
     const [levelToEdit, setLevelToEdit] = useState(null);
 
+    const [searchQuery, setSearchQuery] = useState("");
     const [stageFilter, setStageFilter] = useState("");
     const [levelFilter, setLevelFilter] = useState("");
+    const [topicFilter, setTopicFilter] = useState("");
+    const [githubFilter, setGithubFilter] = useState("");
     const [stateFilter, setStateFilter] = useState("");
 
     const [notification, setNotification] = useState({
@@ -303,6 +306,28 @@ const CurriculumDetail = () => {
 
         let filteredProjects = [...curriculum.projects];
 
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            filteredProjects = filteredProjects.filter((project) => {
+                const matchesName = project.name.toLowerCase().includes(query);
+                const matchesDescription = project.description
+                    .toLowerCase()
+                    .includes(query);
+                const matchesIdentifier = project.identifier
+                    ?.toLowerCase()
+                    .includes(query);
+                const matchesTopics = project.topics?.some((topic) =>
+                    topic.toLowerCase().includes(query)
+                );
+                return (
+                    matchesName ||
+                    matchesDescription ||
+                    matchesIdentifier ||
+                    matchesTopics
+                );
+            });
+        }
+
         if (stageFilter) {
             filteredProjects = filterProjectsByStage(
                 filteredProjects,
@@ -318,6 +343,25 @@ const CurriculumDetail = () => {
             );
         }
 
+        if (topicFilter) {
+            filteredProjects = filteredProjects.filter((project) =>
+                project.topics?.includes(topicFilter)
+            );
+        }
+
+        if (githubFilter) {
+            if (githubFilter === "with") {
+                filteredProjects = filteredProjects.filter(
+                    (project) => project.githubRepo && project.githubRepo.trim()
+                );
+            } else if (githubFilter === "without") {
+                filteredProjects = filteredProjects.filter(
+                    (project) =>
+                        !project.githubRepo || !project.githubRepo.trim()
+                );
+            }
+        }
+
         if (stateFilter) {
             filteredProjects = filteredProjects.filter(
                 (p) => p.state === stateFilter
@@ -329,6 +373,13 @@ const CurriculumDetail = () => {
 
     const sortedLevels = sortLevelsByOrder(curriculum?.levels || []);
     const sortedProjects = getFilteredProjects();
+    const hasActiveFilters =
+        searchQuery ||
+        stageFilter ||
+        levelFilter ||
+        topicFilter ||
+        githubFilter ||
+        stateFilter;
 
     if (loading) {
         return <LoadingSpinner message="Loading curriculum..." />;
@@ -417,11 +468,17 @@ const CurriculumDetail = () => {
                 <ProjectFilter
                     projects={curriculum.projects || []}
                     levels={curriculum.levels || []}
+                    searchQuery={searchQuery}
                     stageFilter={stageFilter}
                     levelFilter={levelFilter}
+                    topicFilter={topicFilter}
+                    githubFilter={githubFilter}
                     stateFilter={stateFilter}
+                    onSearchChange={setSearchQuery}
                     onStageChange={setStageFilter}
                     onLevelChange={setLevelFilter}
+                    onTopicChange={setTopicFilter}
+                    onGithubChange={setGithubFilter}
                     onStateChange={setStateFilter}
                     showStateFilter={true}
                 />
@@ -609,7 +666,13 @@ const CurriculumDetail = () => {
                     <div className="card-header">
                         <div className="flex-between">
                             <h2 className="card-title">
-                                Projects ({sortedProjects.length})
+                                Projects ({sortedProjects.length}
+                                {hasActiveFilters && curriculum.projects && (
+                                    <span className="text-muted">
+                                        /{curriculum.projects.length}
+                                    </span>
+                                )}
+                                )
                             </h2>
                             <button
                                 onClick={() => setShowProjectModal(true)}
@@ -838,7 +901,7 @@ const CurriculumDetail = () => {
                         </div>
                     ) : (
                         <p className="text-muted text-center text-sm">
-                            {stageFilter || levelFilter || stateFilter
+                            {hasActiveFilters
                                 ? "No projects match the current filters"
                                 : "No projects yet"}
                         </p>

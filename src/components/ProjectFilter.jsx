@@ -5,16 +5,31 @@ import { PROJECT_STATE_LABELS } from "../utils/projectUtils";
 const ProjectFilter = ({
     projects = [],
     levels = [],
+    searchQuery = "",
     stageFilter,
     levelFilter,
+    topicFilter = "",
+    githubFilter = "",
+    onSearchChange,
     onStageChange,
     onLevelChange,
+    onTopicChange,
+    onGithubChange,
     showStateFilter = false,
     stateFilter,
     onStateChange,
 }) => {
     const uniqueStages = getUniqueStages(projects);
     const sortedLevels = sortLevelsByOrder(levels);
+
+    const getUniqueTopics = () => {
+        const allTopics = projects
+            .flatMap((project) => project.topics || [])
+            .filter((topic) => topic && topic.trim());
+        return [...new Set(allTopics)].sort();
+    };
+
+    const uniqueTopics = getUniqueTopics();
 
     const handleStageChange = (e) => {
         const value = e.target.value;
@@ -32,13 +47,41 @@ const ProjectFilter = ({
         }
     };
 
+    const clearAllFilters = () => {
+        onSearchChange("");
+        onStageChange("");
+        onLevelChange("");
+        onTopicChange("");
+        onGithubChange("");
+        if (onStateChange) onStateChange("");
+    };
+
+    const hasActiveFilters =
+        searchQuery ||
+        stageFilter ||
+        levelFilter ||
+        topicFilter ||
+        githubFilter ||
+        stateFilter;
+
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Filters</h3>
+                <h3 className="card-title">Search & Filters</h3>
             </div>
 
-            <div className={showStateFilter ? "grid grid-3" : "grid grid-2"}>
+            <div className="form-group">
+                <label className="form-label">Search Projects</label>
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    className="form-input"
+                    placeholder="Search by name, description, identifier, or topics..."
+                />
+            </div>
+
+            <div className="grid grid-3">
                 <div className="form-group">
                     <label className="form-label">Stage</label>
                     <select
@@ -71,6 +114,37 @@ const ProjectFilter = ({
                     </select>
                 </div>
 
+                <div className="form-group">
+                    <label className="form-label">Topic</label>
+                    <select
+                        value={topicFilter}
+                        onChange={(e) => onTopicChange(e.target.value)}
+                        className="form-select"
+                    >
+                        <option value="">All Topics</option>
+                        {uniqueTopics.map((topic) => (
+                            <option key={topic} value={topic}>
+                                {topic}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            <div className={showStateFilter ? "grid grid-2" : "grid grid-1"}>
+                <div className="form-group">
+                    <label className="form-label">GitHub Repository</label>
+                    <select
+                        value={githubFilter}
+                        onChange={(e) => onGithubChange(e.target.value)}
+                        className="form-select"
+                    >
+                        <option value="">All Projects</option>
+                        <option value="with">With GitHub Repo</option>
+                        <option value="without">Without GitHub Repo</option>
+                    </select>
+                </div>
+
                 {showStateFilter && (
                     <div className="form-group">
                         <label className="form-label">State</label>
@@ -92,31 +166,54 @@ const ProjectFilter = ({
                 )}
             </div>
 
-            {(stageFilter || levelFilter || stateFilter) && (
+            {hasActiveFilters && (
                 <div className="flex-between" style={{ marginTop: "0.5rem" }}>
-                    <span className="text-muted text-xs">
+                    <div className="text-muted text-xs" style={{ flex: 1 }}>
+                        {searchQuery && `Search: "${searchQuery}"`}
+                        {searchQuery &&
+                            (stageFilter ||
+                                levelFilter ||
+                                topicFilter ||
+                                githubFilter ||
+                                stateFilter) &&
+                            " • "}
                         {stageFilter && `Stage ${stageFilter}`}
+                        {stageFilter &&
+                            (levelFilter ||
+                                topicFilter ||
+                                githubFilter ||
+                                stateFilter) &&
+                            " • "}
                         {levelFilter &&
                             `${
                                 sortedLevels.find((l) => l._id === levelFilter)
                                     ?.name || "Selected Level"
                             }`}
-                        {stateFilter &&
-                            ` • ${PROJECT_STATE_LABELS[stateFilter]}`}
-                    </span>
+                        {levelFilter &&
+                            (topicFilter || githubFilter || stateFilter) &&
+                            " • "}
+                        {topicFilter && `Topic: ${topicFilter}`}
+                        {topicFilter && (githubFilter || stateFilter) && " • "}
+                        {githubFilter &&
+                            `${
+                                githubFilter === "with"
+                                    ? "With GitHub"
+                                    : githubFilter === "without"
+                                    ? "Without GitHub"
+                                    : ""
+                            }`}
+                        {githubFilter && stateFilter && " • "}
+                        {stateFilter && PROJECT_STATE_LABELS[stateFilter]}
+                    </div>
                     <button
-                        onClick={() => {
-                            onStageChange("");
-                            onLevelChange("");
-                            if (onStateChange) onStateChange("");
-                        }}
+                        onClick={clearAllFilters}
                         className="btn btn-secondary btn-small"
                         style={{
                             padding: "0.25rem 0.5rem",
                             fontSize: "0.7rem",
                         }}
                     >
-                        Clear
+                        Clear All
                     </button>
                 </div>
             )}
