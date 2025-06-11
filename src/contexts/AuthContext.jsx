@@ -16,44 +16,74 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // Check if user is logged in on app load
     useEffect(() => {
         checkAuthStatus();
     }, []);
 
     const checkAuthStatus = async () => {
         try {
+            setError("");
             const data = await userAPI.getProfile();
-            setUser(data.user);
+            if (data && data.user) {
+                setUser(data.user);
+            } else {
+                setUser(null);
+            }
         } catch (error) {
-            // User is not authenticated
             setUser(null);
+            setError("");
         } finally {
             setLoading(false);
         }
     };
 
     const login = async (credentials) => {
+        if (!credentials || !credentials.username || !credentials.password) {
+            const errorMessage = "Username and password are required";
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
+        }
+
         try {
             setError("");
             const data = await userAPI.login(credentials);
-            setUser(data.user);
-            return { success: true };
+            if (data && data.user) {
+                setUser(data.user);
+                return { success: true };
+            } else {
+                const errorMessage = "Invalid response from server";
+                setError(errorMessage);
+                return { success: false, error: errorMessage };
+            }
         } catch (error) {
-            setError(error.message);
-            return { success: false, error: error.message };
+            const errorMessage = error.message || "Login failed";
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
         }
     };
 
     const register = async (userData) => {
+        if (!userData || !userData.username || !userData.password) {
+            const errorMessage = "Username and password are required";
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
+        }
+
         try {
             setError("");
             const data = await userAPI.register(userData);
-            setUser(data.user);
-            return { success: true };
+            if (data && data.user) {
+                setUser(data.user);
+                return { success: true };
+            } else {
+                const errorMessage = "Invalid response from server";
+                setError(errorMessage);
+                return { success: false, error: errorMessage };
+            }
         } catch (error) {
-            setError(error.message);
-            return { success: false, error: error.message };
+            const errorMessage = error.message || "Registration failed";
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
         }
     };
 
@@ -63,26 +93,46 @@ export const AuthProvider = ({ children }) => {
     };
 
     const updateUser = async (userData) => {
+        if (!userData || Object.keys(userData).length === 0) {
+            const errorMessage = "No update data provided";
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
+        }
+
         try {
             setError("");
             const data = await userAPI.updateUser(userData);
-            setUser(data.user);
-            return { success: true };
+            if (data && data.user) {
+                setUser(data.user);
+                return { success: true };
+            } else {
+                const errorMessage = "Invalid response from server";
+                setError(errorMessage);
+                return { success: false, error: errorMessage };
+            }
         } catch (error) {
-            setError(error.message);
-            return { success: false, error: error.message };
+            const errorMessage = error.message || "Update failed";
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
         }
     };
 
     const deleteAccount = async (password) => {
+        if (!password || typeof password !== "string") {
+            const errorMessage = "Password is required to delete account";
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
+        }
+
         try {
             setError("");
             await userAPI.deleteUser(password);
             setUser(null);
             return { success: true };
         } catch (error) {
-            setError(error.message);
-            return { success: false, error: error.message };
+            const errorMessage = error.message || "Account deletion failed";
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
         }
     };
 

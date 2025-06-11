@@ -6,6 +6,7 @@ import {
     PROJECT_STATE_LABELS,
     PROJECT_STATE_COLORS,
     constructGithubUrl,
+    safeFormatDate,
 } from "../utils/projectUtils";
 import { useAuth } from "../contexts/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -46,7 +47,9 @@ const ProjectDetail = () => {
     });
 
     useEffect(() => {
-        fetchProject();
+        if (id) {
+            fetchProject();
+        }
     }, [id]);
 
     const showNotification = (type, title, message) => {
@@ -69,23 +72,36 @@ const ProjectDetail = () => {
         try {
             setError("");
             const data = await projectAPI.getById(id);
+
+            if (!data || !data.project) {
+                throw new Error("Project not found");
+            }
+
             setProject(data.project);
-            setOriginalCurriculum(data.project.curriculum);
+            setOriginalCurriculum(data.project.curriculum || null);
         } catch (error) {
-            setError(error.message);
+            setError(error.message || "Failed to load project");
         } finally {
             setLoading(false);
         }
     };
 
     const handleUpdateProjectState = async (newState) => {
-        if (!project) return;
+        if (!project || !Object.values(PROJECT_STATES).includes(newState)) {
+            showNotification("error", "Error", "Invalid project state");
+            return;
+        }
 
         setStateUpdateLoading(true);
         try {
             const result = await projectAPI.update(project._id, {
                 state: newState,
             });
+
+            if (!result || !result.project) {
+                throw new Error("Invalid response from server");
+            }
+
             const projectWithCurriculum = {
                 ...result.project,
                 curriculum: originalCurriculum,
@@ -108,6 +124,11 @@ const ProjectDetail = () => {
     };
 
     const handleEditSuccess = (updatedProject) => {
+        if (!updatedProject) {
+            showNotification("error", "Error", "Invalid project data received");
+            return;
+        }
+
         const projectWithCurriculum = {
             ...updatedProject,
             curriculum: originalCurriculum,
@@ -118,6 +139,15 @@ const ProjectDetail = () => {
     };
 
     const handleResourceSuccess = (newResource) => {
+        if (!newResource) {
+            showNotification(
+                "error",
+                "Error",
+                "Invalid resource data received"
+            );
+            return;
+        }
+
         setProject((prev) => ({
             ...prev,
             projectResources: [...(prev.projectResources || []), newResource],
@@ -127,6 +157,11 @@ const ProjectDetail = () => {
     };
 
     const handleNoteSuccess = (newNote) => {
+        if (!newNote) {
+            showNotification("error", "Error", "Invalid note data received");
+            return;
+        }
+
         setProject((prev) => ({
             ...prev,
             notes: [...(prev.notes || []), newNote],
@@ -136,6 +171,11 @@ const ProjectDetail = () => {
     };
 
     const handlePrerequisiteSuccess = (updatedProject) => {
+        if (!updatedProject) {
+            showNotification("error", "Error", "Invalid project data received");
+            return;
+        }
+
         const projectWithCurriculum = {
             ...updatedProject,
             curriculum: originalCurriculum,
@@ -150,18 +190,22 @@ const ProjectDetail = () => {
     };
 
     const handleDeleteResourceClick = (resource) => {
+        if (!resource || !resource._id) {
+            showNotification("error", "Error", "Invalid resource");
+            return;
+        }
         setResourceToDelete(resource);
         setShowDeleteResourceModal(true);
     };
 
     const handleDeleteResourceConfirm = async () => {
-        if (!resourceToDelete) return;
+        if (!resourceToDelete || !resourceToDelete._id) return;
 
         try {
             await projectAPI.deleteResource(resourceToDelete._id);
             setProject((prev) => ({
                 ...prev,
-                projectResources: prev.projectResources.filter(
+                projectResources: (prev.projectResources || []).filter(
                     (r) => r._id !== resourceToDelete._id
                 ),
             }));
@@ -187,18 +231,24 @@ const ProjectDetail = () => {
     };
 
     const handleDeleteNoteClick = (note) => {
+        if (!note || !note._id) {
+            showNotification("error", "Error", "Invalid note");
+            return;
+        }
         setNoteToDelete(note);
         setShowDeleteNoteModal(true);
     };
 
     const handleDeleteNoteConfirm = async () => {
-        if (!noteToDelete) return;
+        if (!noteToDelete || !noteToDelete._id) return;
 
         try {
             await noteAPI.delete(noteToDelete._id);
             setProject((prev) => ({
                 ...prev,
-                notes: prev.notes.filter((n) => n._id !== noteToDelete._id),
+                notes: (prev.notes || []).filter(
+                    (n) => n._id !== noteToDelete._id
+                ),
             }));
             setShowDeleteNoteModal(false);
             setNoteToDelete(null);
@@ -221,16 +271,6 @@ const ProjectDetail = () => {
         setNoteToDelete(null);
     };
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
-
     const getNoteTypeColor = (type) => {
         const colors = {
             reflection: "text-success",
@@ -246,16 +286,35 @@ const ProjectDetail = () => {
     };
 
     const getLevelForStage = (stage) => {
-        if (!originalCurriculum?.levels) return null;
+        if (
+            !originalCurriculum ||
+            !originalCurriculum.levels ||
+            !Array.isArray(originalCurriculum.levels) ||
+            typeof stage !== "number"
+        ) {
+            return null;
+        }
         return originalCurriculum.levels.find(
-            (level) => stage >= level.stageStart && stage <= level.stageEnd
+            (level) =>
+                level &&
+                typeof level.stageStart === "number" &&
+                typeof level.stageEnd === "number" &&
+                stage >= level.stageStart &&
+                stage <= level.stageEnd
         );
     };
 
     const getStageDefinition = (stageNumber) => {
-        if (!originalCurriculum?.stages) return null;
+        if (
+            !originalCurriculum ||
+            !originalCurriculum.stages ||
+            !Array.isArray(originalCurriculum.stages) ||
+            typeof stageNumber !== "number"
+        ) {
+            return null;
+        }
         return originalCurriculum.stages.find(
-            (s) => s.stageNumber === stageNumber
+            (s) => s && s.stageNumber === stageNumber
         );
     };
 
@@ -264,7 +323,10 @@ const ProjectDetail = () => {
 
         if (project.githubRepo) {
             const stageDefinition = getStageDefinition(project.stage);
-            if (stageDefinition?.defaultGithubRepo === project.githubRepo) {
+            if (
+                stageDefinition &&
+                stageDefinition.defaultGithubRepo === project.githubRepo
+            ) {
                 return { repo: project.githubRepo, source: "stage" };
             }
             return { repo: project.githubRepo, source: "project" };
@@ -308,21 +370,27 @@ const ProjectDetail = () => {
     const projectLevel = getLevelForStage(project.stage);
     const stageDefinition = getStageDefinition(project.stage);
     const { repo: githubRepo, source: repoSource } = getGithubRepoSource();
-    const githubUrl = constructGithubUrl(user?.githubUsername, githubRepo);
+    const githubUrl = constructGithubUrl(
+        user && user.githubUsername,
+        githubRepo
+    );
+    const curriculumId =
+        (originalCurriculum && originalCurriculum._id) ||
+        (project.curriculum && project.curriculum._id);
+    const curriculumName =
+        (originalCurriculum && originalCurriculum.name) ||
+        (project.curriculum && project.curriculum.name);
 
     return (
         <div>
             <div className="flex-between mb-1">
                 <div>
                     <Link
-                        to={`/curriculum/${
-                            originalCurriculum?._id || project.curriculum?._id
-                        }`}
+                        to={`/curriculum/${curriculumId}`}
                         className="text-muted text-sm"
                         style={{ textDecoration: "none" }}
                     >
-                        ← Back to{" "}
-                        {originalCurriculum?.name || project.curriculum?.name}
+                        ← Back to {curriculumName || "Curriculum"}
                     </Link>
                     <div
                         className="flex"
@@ -333,7 +401,7 @@ const ProjectDetail = () => {
                             flexWrap: "wrap",
                         }}
                     >
-                        <h1>{project.name}</h1>
+                        <h1>{project.name || "Untitled Project"}</h1>
                         {project.identifier && (
                             <span
                                 className="text-primary"
@@ -346,18 +414,23 @@ const ProjectDetail = () => {
                             </span>
                         )}
                         <span
-                            className={PROJECT_STATE_COLORS[project.state]}
+                            className={
+                                PROJECT_STATE_COLORS[project.state] ||
+                                "text-muted"
+                            }
                             style={{ fontSize: "0.9rem", fontWeight: "500" }}
                         >
-                            {PROJECT_STATE_LABELS[project.state]}
+                            {PROJECT_STATE_LABELS[project.state] || "Unknown"}
                         </span>
                     </div>
-                    <p
-                        className="text-muted text-sm"
-                        style={{ marginTop: "0.25rem" }}
-                    >
-                        {project.description}
-                    </p>
+                    {project.description && (
+                        <p
+                            className="text-muted text-sm"
+                            style={{ marginTop: "0.25rem" }}
+                        >
+                            {project.description}
+                        </p>
+                    )}
                     <div
                         className="flex"
                         style={{
@@ -368,18 +441,17 @@ const ProjectDetail = () => {
                         }}
                     >
                         <span className="text-muted text-sm">
-                            Stage {project.stage}
+                            Stage {project.stage || "N/A"}
                             {project.order && ` #${project.order}`}
                         </span>
-                        {stageDefinition && (
+                        {stageDefinition && stageDefinition.name && (
                             <span className="text-info text-sm">
-                                {stageDefinition.name ||
-                                    `Stage ${project.stage} defined`}
+                                {stageDefinition.name}
                             </span>
                         )}
                         {projectLevel && (
                             <span className="text-primary text-sm">
-                                Level: {projectLevel.name}
+                                Level: {projectLevel.name || "Unnamed Level"}
                                 {projectLevel.defaultIdentifier &&
                                     ` (${projectLevel.defaultIdentifier})`}
                             </span>
@@ -405,35 +477,37 @@ const ProjectDetail = () => {
                             </div>
                         )}
                     </div>
-                    {project.topics && project.topics.length > 0 && (
-                        <div
-                            className="flex"
-                            style={{
-                                gap: "0.25rem",
-                                flexWrap: "wrap",
-                                marginTop: "0.5rem",
-                            }}
-                        >
-                            {project.topics.map((topic, index) => (
-                                <span
-                                    key={index}
-                                    style={{
-                                        background: "var(--bg-tertiary)",
-                                        padding: "0.25rem 0.5rem",
-                                        borderRadius: "3px",
-                                        fontSize: "0.75rem",
-                                        color: "var(--text-secondary)",
-                                    }}
-                                >
-                                    {topic}
-                                </span>
-                            ))}
-                        </div>
-                    )}
+                    {project.topics &&
+                        Array.isArray(project.topics) &&
+                        project.topics.length > 0 && (
+                            <div
+                                className="flex"
+                                style={{
+                                    gap: "0.25rem",
+                                    flexWrap: "wrap",
+                                    marginTop: "0.5rem",
+                                }}
+                            >
+                                {project.topics.map((topic, index) => (
+                                    <span
+                                        key={index}
+                                        style={{
+                                            background: "var(--bg-tertiary)",
+                                            padding: "0.25rem 0.5rem",
+                                            borderRadius: "3px",
+                                            fontSize: "0.75rem",
+                                            color: "var(--text-secondary)",
+                                        }}
+                                    >
+                                        {topic}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                 </div>
                 <div className="btn-group">
                     <select
-                        value={project.state}
+                        value={project.state || PROJECT_STATES.NOT_STARTED}
                         onChange={(e) =>
                             handleUpdateProjectState(e.target.value)
                         }
@@ -502,136 +576,162 @@ const ProjectDetail = () => {
                     </div>
                 )}
 
-            {project.prerequisites && project.prerequisites.length > 0 && (
-                <div className="card mb-1">
-                    <div className="card-header">
-                        <div className="flex-between">
-                            <h2 className="card-title">
-                                Prerequisites ({project.prerequisites.length})
-                            </h2>
-                            <button
-                                onClick={() => setShowPrerequisiteModal(true)}
-                                className="btn btn-secondary btn-small"
-                            >
-                                Manage
-                            </button>
-                        </div>
-                    </div>
-                    <div className="scrollable-list">
-                        <div className="compact-list">
-                            {project.prerequisites.map((prerequisite) => (
-                                <div
-                                    key={prerequisite._id}
-                                    className="compact-item"
+            {project.prerequisites &&
+                Array.isArray(project.prerequisites) &&
+                project.prerequisites.length > 0 && (
+                    <div className="card mb-1">
+                        <div className="card-header">
+                            <div className="flex-between">
+                                <h2 className="card-title">
+                                    Prerequisites (
+                                    {project.prerequisites.length})
+                                </h2>
+                                <button
+                                    onClick={() =>
+                                        setShowPrerequisiteModal(true)
+                                    }
+                                    className="btn btn-secondary btn-small"
                                 >
-                                    <div style={{ flex: 1 }}>
-                                        <div
-                                            className="flex"
-                                            style={{
-                                                gap: "0.5rem",
-                                                alignItems: "center",
-                                                marginBottom: "0.25rem",
-                                                flexWrap: "wrap",
-                                            }}
-                                        >
-                                            <Link
-                                                to={`/project/${prerequisite._id}`}
+                                    Manage
+                                </button>
+                            </div>
+                        </div>
+                        <div className="scrollable-list">
+                            <div className="compact-list">
+                                {project.prerequisites.map((prerequisite) => (
+                                    <div
+                                        key={prerequisite._id}
+                                        className="compact-item"
+                                    >
+                                        <div style={{ flex: 1 }}>
+                                            <div
+                                                className="flex"
                                                 style={{
-                                                    textDecoration: "none",
-                                                    color: "inherit",
-                                                    fontSize: "0.9rem",
-                                                    fontWeight: "500",
+                                                    gap: "0.5rem",
+                                                    alignItems: "center",
+                                                    marginBottom: "0.25rem",
+                                                    flexWrap: "wrap",
                                                 }}
                                             >
-                                                {prerequisite.name}
-                                            </Link>
-                                            {prerequisite.identifier && (
+                                                <Link
+                                                    to={`/project/${prerequisite._id}`}
+                                                    style={{
+                                                        textDecoration: "none",
+                                                        color: "inherit",
+                                                        fontSize: "0.9rem",
+                                                        fontWeight: "500",
+                                                    }}
+                                                >
+                                                    {prerequisite.name ||
+                                                        "Untitled Project"}
+                                                </Link>
+                                                {prerequisite.identifier && (
+                                                    <span
+                                                        className="text-primary"
+                                                        style={{
+                                                            fontSize: "0.75rem",
+                                                            fontWeight: "600",
+                                                        }}
+                                                    >
+                                                        [
+                                                        {
+                                                            prerequisite.identifier
+                                                        }
+                                                        ]
+                                                    </span>
+                                                )}
+                                                <span className="text-muted text-xs">
+                                                    Stage{" "}
+                                                    {prerequisite.stage ||
+                                                        "N/A"}
+                                                </span>
                                                 <span
-                                                    className="text-primary"
+                                                    className={
+                                                        PROJECT_STATE_COLORS[
+                                                            prerequisite.state
+                                                        ] || "text-muted"
+                                                    }
                                                     style={{
                                                         fontSize: "0.75rem",
-                                                        fontWeight: "600",
                                                     }}
                                                 >
-                                                    [{prerequisite.identifier}]
+                                                    {PROJECT_STATE_LABELS[
+                                                        prerequisite.state
+                                                    ] || "Unknown"}
                                                 </span>
-                                            )}
-                                            <span className="text-muted text-xs">
-                                                Stage {prerequisite.stage}
-                                            </span>
-                                            <span
-                                                className={
-                                                    PROJECT_STATE_COLORS[
-                                                        prerequisite.state
-                                                    ]
-                                                }
-                                                style={{ fontSize: "0.75rem" }}
-                                            >
-                                                {
-                                                    PROJECT_STATE_LABELS[
-                                                        prerequisite.state
-                                                    ]
-                                                }
-                                            </span>
-                                        </div>
-                                        {prerequisite.topics &&
-                                            prerequisite.topics.length > 0 && (
-                                                <div
-                                                    className="flex"
-                                                    style={{
-                                                        gap: "0.25rem",
-                                                        flexWrap: "wrap",
-                                                    }}
-                                                >
-                                                    {prerequisite.topics
-                                                        .slice(0, 3)
-                                                        .map((topic, index) => (
+                                            </div>
+                                            {prerequisite.topics &&
+                                                Array.isArray(
+                                                    prerequisite.topics
+                                                ) &&
+                                                prerequisite.topics.length >
+                                                    0 && (
+                                                    <div
+                                                        className="flex"
+                                                        style={{
+                                                            gap: "0.25rem",
+                                                            flexWrap: "wrap",
+                                                        }}
+                                                    >
+                                                        {prerequisite.topics
+                                                            .slice(0, 3)
+                                                            .map(
+                                                                (
+                                                                    topic,
+                                                                    index
+                                                                ) => (
+                                                                    <span
+                                                                        key={
+                                                                            index
+                                                                        }
+                                                                        style={{
+                                                                            background:
+                                                                                "var(--bg-primary)",
+                                                                            padding:
+                                                                                "0.125rem 0.25rem",
+                                                                            borderRadius:
+                                                                                "3px",
+                                                                            fontSize:
+                                                                                "0.65rem",
+                                                                            color: "var(--text-secondary)",
+                                                                        }}
+                                                                    >
+                                                                        {topic}
+                                                                    </span>
+                                                                )
+                                                            )}
+                                                        {prerequisite.topics
+                                                            .length > 3 && (
                                                             <span
-                                                                key={index}
+                                                                className="text-muted"
                                                                 style={{
-                                                                    background:
-                                                                        "var(--bg-primary)",
-                                                                    padding:
-                                                                        "0.125rem 0.25rem",
-                                                                    borderRadius:
-                                                                        "3px",
                                                                     fontSize:
                                                                         "0.65rem",
-                                                                    color: "var(--text-secondary)",
+                                                                    fontStyle:
+                                                                        "italic",
                                                                 }}
                                                             >
-                                                                {topic}
+                                                                +
+                                                                {prerequisite
+                                                                    .topics
+                                                                    .length -
+                                                                    3}{" "}
+                                                                more
                                                             </span>
-                                                        ))}
-                                                    {prerequisite.topics
-                                                        .length > 3 && (
-                                                        <span
-                                                            className="text-muted"
-                                                            style={{
-                                                                fontSize:
-                                                                    "0.65rem",
-                                                                fontStyle:
-                                                                    "italic",
-                                                            }}
-                                                        >
-                                                            +
-                                                            {prerequisite.topics
-                                                                .length -
-                                                                3}{" "}
-                                                            more
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )}
+                                                        )}
+                                                    </div>
+                                                )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {(!project.prerequisites || project.prerequisites.length === 0) && (
+            {(!project.prerequisites ||
+                !Array.isArray(project.prerequisites) ||
+                project.prerequisites.length === 0) && (
                 <div className="card mb-1">
                     <div className="card-header">
                         <div className="flex-between">
@@ -656,7 +756,11 @@ const ProjectDetail = () => {
                         <div className="flex-between">
                             <h2 className="card-title">
                                 Resources (
-                                {project.projectResources?.length || 0})
+                                {project.projectResources &&
+                                Array.isArray(project.projectResources)
+                                    ? project.projectResources.length
+                                    : 0}
+                                )
                             </h2>
                             <button
                                 onClick={() => setShowResourceModal(true)}
@@ -668,6 +772,7 @@ const ProjectDetail = () => {
                     </div>
 
                     {project.projectResources &&
+                    Array.isArray(project.projectResources) &&
                     project.projectResources.length > 0 ? (
                         <div className="scrollable-list">
                             <div className="compact-list">
@@ -689,23 +794,28 @@ const ProjectDetail = () => {
                                                         fontSize: "0.9rem",
                                                     }}
                                                 >
-                                                    {resource.name}
+                                                    {resource.name ||
+                                                        "Untitled Resource"}
                                                 </strong>
                                                 <span className="text-muted text-xs">
                                                     {resource.type
-                                                        .charAt(0)
-                                                        .toUpperCase() +
-                                                        resource.type.slice(1)}
+                                                        ? resource.type
+                                                              .charAt(0)
+                                                              .toUpperCase() +
+                                                          resource.type.slice(1)
+                                                        : "Unknown Type"}
                                                 </span>
                                             </div>
-                                            <a
-                                                href={resource.link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-primary text-xs"
-                                            >
-                                                {resource.link}
-                                            </a>
+                                            {resource.link && (
+                                                <a
+                                                    href={resource.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-primary text-xs"
+                                                >
+                                                    {resource.link}
+                                                </a>
+                                            )}
                                         </div>
                                         <button
                                             onClick={() =>
@@ -736,7 +846,11 @@ const ProjectDetail = () => {
                     <div className="card-header">
                         <div className="flex-between">
                             <h2 className="card-title">
-                                Notes ({project.notes?.length || 0})
+                                Notes (
+                                {project.notes && Array.isArray(project.notes)
+                                    ? project.notes.length
+                                    : 0}
+                                )
                             </h2>
                             <button
                                 onClick={() => setShowNoteModal(true)}
@@ -747,15 +861,21 @@ const ProjectDetail = () => {
                         </div>
                     </div>
 
-                    {project.notes && project.notes.length > 0 ? (
+                    {project.notes &&
+                    Array.isArray(project.notes) &&
+                    project.notes.length > 0 ? (
                         <div className="scrollable-list">
                             <div className="compact-list">
                                 {project.notes
-                                    .sort(
-                                        (a, b) =>
-                                            new Date(b.createdAt) -
-                                            new Date(a.createdAt)
-                                    )
+                                    .sort((a, b) => {
+                                        const aDate = new Date(
+                                            a.createdAt || 0
+                                        );
+                                        const bDate = new Date(
+                                            b.createdAt || 0
+                                        );
+                                        return bDate - aDate;
+                                    })
                                     .map((note) => (
                                         <div
                                             key={note._id}
@@ -782,9 +902,11 @@ const ProjectDetail = () => {
                                                     }}
                                                 >
                                                     {note.type
-                                                        .charAt(0)
-                                                        .toUpperCase() +
-                                                        note.type.slice(1)}
+                                                        ? note.type
+                                                              .charAt(0)
+                                                              .toUpperCase() +
+                                                          note.type.slice(1)
+                                                        : "Other"}
                                                 </span>
                                                 <div
                                                     className="flex"
@@ -794,7 +916,7 @@ const ProjectDetail = () => {
                                                     }}
                                                 >
                                                     <span className="text-muted text-xs">
-                                                        {formatDate(
+                                                        {safeFormatDate(
                                                             note.createdAt
                                                         )}
                                                     </span>
@@ -823,7 +945,7 @@ const ProjectDetail = () => {
                                                     lineHeight: "1.4",
                                                 }}
                                             >
-                                                {note.content}
+                                                {note.content || "No content"}
                                             </p>
                                         </div>
                                     ))}
@@ -856,9 +978,7 @@ const ProjectDetail = () => {
             >
                 <ProjectForm
                     project={project}
-                    curriculumId={
-                        originalCurriculum?._id || project.curriculum?._id
-                    }
+                    curriculumId={curriculumId}
                     onSuccess={handleEditSuccess}
                     onCancel={() => setShowEditModal(false)}
                 />
@@ -896,7 +1016,9 @@ const ProjectDetail = () => {
                 <div className="mb-1">
                     <p className="text-error mb-1">
                         ⚠️ Are you sure you want to delete "
-                        {resourceToDelete?.name}"?
+                        {(resourceToDelete && resourceToDelete.name) ||
+                            "this resource"}
+                        "?
                     </p>
                     <p className="text-muted text-sm">
                         This action cannot be undone.
@@ -931,24 +1053,30 @@ const ProjectDetail = () => {
                     <p className="text-muted text-sm">
                         This action cannot be undone.
                     </p>
-                    <div
-                        className="card mt-1"
-                        style={{ background: "var(--bg-tertiary)" }}
-                    >
-                        <strong>
-                            {noteToDelete?.type?.charAt(0).toUpperCase() +
-                                noteToDelete?.type?.slice(1)}
-                        </strong>
-                        <p
-                            style={{
-                                margin: "0.5rem 0 0 0",
-                                whiteSpace: "pre-wrap",
-                                fontSize: "0.85rem",
-                            }}
+                    {noteToDelete && (
+                        <div
+                            className="card mt-1"
+                            style={{ background: "var(--bg-tertiary)" }}
                         >
-                            {noteToDelete?.content}
-                        </p>
-                    </div>
+                            <strong>
+                                {noteToDelete.type
+                                    ? noteToDelete.type
+                                          .charAt(0)
+                                          .toUpperCase() +
+                                      noteToDelete.type.slice(1)
+                                    : "Other"}
+                            </strong>
+                            <p
+                                style={{
+                                    margin: "0.5rem 0 0 0",
+                                    whiteSpace: "pre-wrap",
+                                    fontSize: "0.85rem",
+                                }}
+                            >
+                                {noteToDelete.content || "No content"}
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="btn-group">

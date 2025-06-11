@@ -16,11 +16,19 @@ const apiRequest = async (endpoint, options = {}) => {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.message || "An error occurred");
+            throw new Error(
+                data.message ||
+                    `HTTP ${response.status}: ${response.statusText}`
+            );
         }
 
         return data;
     } catch (error) {
+        if (error instanceof TypeError && error.message.includes("fetch")) {
+            throw new Error(
+                "Network error: Please check your connection and try again"
+            );
+        }
         throw error;
     }
 };

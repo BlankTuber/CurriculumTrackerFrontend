@@ -16,11 +16,15 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
     const isEditing = !!curriculum;
 
     const [formData, setFormData] = useState({
-        name: curriculum?.name || "",
-        description: curriculum?.description || "",
+        name: (curriculum && curriculum.name) || "",
+        description: (curriculum && curriculum.description) || "",
     });
 
-    const [resources, setResources] = useState(curriculum?.resources || []);
+    const [resources, setResources] = useState(
+        curriculum && Array.isArray(curriculum.resources)
+            ? curriculum.resources
+            : []
+    );
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -31,6 +35,7 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
             ...prev,
             [name]: value,
         }));
+        if (error) setError("");
     };
 
     const handleResourceChange = (index, field, value) => {
@@ -52,13 +57,25 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
         setResources((prev) => prev.filter((_, i) => i !== index));
     };
 
+    const isValidUrl = (string) => {
+        if (!string || typeof string !== "string") return false;
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    };
+
     const validateForm = () => {
-        if (!formData.name.trim()) {
+        const trimmedName = formData.name.trim();
+
+        if (!trimmedName) {
             setError("Curriculum name is required");
             return false;
         }
 
-        if (formData.name.length > 100) {
+        if (trimmedName.length > 100) {
             setError("Curriculum name must be 100 characters or less");
             return false;
         }
@@ -70,34 +87,40 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
 
         for (let i = 0; i < resources.length; i++) {
             const resource = resources[i];
-            if (resource.name.trim() && !resource.link.trim()) {
+            if (!resource) continue;
+
+            const hasName = resource.name && resource.name.trim();
+            const hasLink = resource.link && resource.link.trim();
+
+            if (hasName && !hasLink) {
                 setError(
                     `Resource ${i + 1}: URL is required when name is provided`
                 );
                 return false;
             }
-            if (resource.link.trim() && !resource.name.trim()) {
+            if (hasLink && !hasName) {
                 setError(
                     `Resource ${i + 1}: Name is required when URL is provided`
                 );
                 return false;
             }
-            if (resource.name.trim() && !isValidUrl(resource.link)) {
+            if (hasName && hasLink && !isValidUrl(resource.link)) {
                 setError(`Resource ${i + 1}: Invalid URL`);
+                return false;
+            }
+            if (hasName && resource.name.trim().length > 100) {
+                setError(
+                    `Resource ${i + 1}: Name must be 100 characters or less`
+                );
+                return false;
+            }
+            if (resource.type && !RESOURCE_TYPES.includes(resource.type)) {
+                setError(`Resource ${i + 1}: Invalid resource type`);
                 return false;
             }
         }
 
         return true;
-    };
-
-    const isValidUrl = (string) => {
-        try {
-            new URL(string);
-            return true;
-        } catch (_) {
-            return false;
-        }
     };
 
     const handleSubmit = async (e) => {
@@ -111,25 +134,46 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
         setError("");
 
         try {
-            const validResources = resources.filter(
-                (resource) => resource.name.trim() && resource.link.trim()
-            );
+            const validResources = resources
+                .filter(
+                    (resource) =>
+                        resource &&
+                        resource.name &&
+                        resource.name.trim() &&
+                        resource.link &&
+                        resource.link.trim()
+                )
+                .map((resource) => ({
+                    name: resource.name.trim(),
+                    type: resource.type || "documentation",
+                    link: resource.link.trim(),
+                }));
 
             const submitData = {
-                ...formData,
+                name: formData.name.trim(),
+                description: formData.description.trim() || undefined,
                 resources: validResources,
             };
 
             let result;
             if (isEditing) {
+                if (!curriculum || !curriculum._id) {
+                    throw new Error("Curriculum ID is required for editing");
+                }
                 result = await curriculumAPI.update(curriculum._id, submitData);
             } else {
                 result = await curriculumAPI.create(submitData);
             }
 
+            if (!result || !result.curriculum) {
+                throw new Error("Invalid response from server");
+            }
+
             onSuccess(result.curriculum);
         } catch (error) {
-            setError(error.message);
+            setError(
+                error.message || "An error occurred while saving the curriculum"
+            );
         } finally {
             setLoading(false);
         }
@@ -206,7 +250,7 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
                             <div key={index} className="resource-grid">
                                 <input
                                     type="text"
-                                    value={resource.name}
+                                    value={resource.name || ""}
                                     onChange={(e) =>
                                         handleResourceChange(
                                             index,
@@ -221,7 +265,7 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
                                 />
 
                                 <select
-                                    value={resource.type}
+                                    value={resource.type || "documentation"}
                                     onChange={(e) =>
                                         handleResourceChange(
                                             index,
@@ -242,7 +286,7 @@ const CurriculumForm = ({ curriculum = null, onSuccess, onCancel }) => {
 
                                 <input
                                     type="url"
-                                    value={resource.link}
+                                    value={resource.link || ""}
                                     onChange={(e) =>
                                         handleResourceChange(
                                             index,

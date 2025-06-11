@@ -56,15 +56,30 @@ const Dashboard = () => {
         try {
             setError("");
             const data = await curriculumAPI.getAll();
-            setCurricula(data.curricula || []);
+
+            if (!data) {
+                throw new Error("Invalid response from server");
+            }
+
+            setCurricula(Array.isArray(data.curricula) ? data.curricula : []);
         } catch (error) {
-            setError(error.message);
+            setError(error.message || "Failed to load curricula");
+            setCurricula([]);
         } finally {
             setLoading(false);
         }
     };
 
     const handleCreateSuccess = (newCurriculum) => {
+        if (!newCurriculum) {
+            showNotification(
+                "error",
+                "Error",
+                "Invalid curriculum data received"
+            );
+            return;
+        }
+
         setCurricula((prev) => [...prev, newCurriculum]);
         setShowCreateModal(false);
         showNotification(
@@ -75,12 +90,16 @@ const Dashboard = () => {
     };
 
     const handleDeleteClick = (curriculum) => {
+        if (!curriculum || !curriculum._id) {
+            showNotification("error", "Error", "Invalid curriculum");
+            return;
+        }
         setCurriculumToDelete(curriculum);
         setShowDeleteModal(true);
     };
 
     const handleDeleteConfirm = async () => {
-        if (!curriculumToDelete) return;
+        if (!curriculumToDelete || !curriculumToDelete._id) return;
 
         try {
             await curriculumAPI.delete(curriculumToDelete._id);
@@ -109,28 +128,33 @@ const Dashboard = () => {
     };
 
     const getCurriculumProgress = (curriculum) => {
+        if (!curriculum) return { total: 0, completed: 0, percentage: 0 };
         return getProjectStats(curriculum.projects || []);
     };
 
     const getOverallStats = () => {
         const totalCurricula = curricula.length;
-        const totalProjects = curricula.reduce(
-            (sum, curr) => sum + (curr.projects?.length || 0),
-            0
-        );
-        const completedProjects = curricula.reduce((sum, curr) => {
-            const stats = getProjectStats(curr.projects || []);
-            return sum + stats.completed;
-        }, 0);
+        let totalProjects = 0;
+        let completedProjects = 0;
+
+        curricula.forEach((curriculum) => {
+            if (curriculum && Array.isArray(curriculum.projects)) {
+                const stats = getProjectStats(curriculum.projects);
+                totalProjects += stats.total;
+                completedProjects += stats.completed;
+            }
+        });
+
+        const overallProgress =
+            totalProjects > 0
+                ? Math.round((completedProjects / totalProjects) * 100)
+                : 0;
 
         return {
             totalCurricula,
             totalProjects,
             completedProjects,
-            overallProgress:
-                totalProjects > 0
-                    ? Math.round((completedProjects / totalProjects) * 100)
-                    : 0,
+            overallProgress,
         };
     };
 
@@ -149,6 +173,12 @@ const Dashboard = () => {
                         {stats.totalCurricula} curricula •{" "}
                         {stats.completedProjects}/{stats.totalProjects} projects
                         completed
+                        {stats.totalProjects > 0 && (
+                            <span className="text-primary">
+                                {" "}
+                                • {stats.overallProgress}% overall
+                            </span>
+                        )}
                     </p>
                 </div>
                 <button
@@ -178,6 +208,8 @@ const Dashboard = () => {
             ) : (
                 <div className="grid grid-3">
                     {curricula.map((curriculum) => {
+                        if (!curriculum || !curriculum._id) return null;
+
                         const progress = getCurriculumProgress(curriculum);
                         const nextProject = getNextIncompleteProject(
                             curriculum.projects || []
@@ -194,7 +226,8 @@ const Dashboard = () => {
                                                 color: "inherit",
                                             }}
                                         >
-                                            {curriculum.name}
+                                            {curriculum.name ||
+                                                "Untitled Curriculum"}
                                         </Link>
                                     </h3>
                                     <span
@@ -236,11 +269,30 @@ const Dashboard = () => {
                                                 {progress.total} projects
                                             </span>
                                             <span>
-                                                {curriculum.levels?.length || 0}{" "}
+                                                {curriculum.levels &&
+                                                Array.isArray(curriculum.levels)
+                                                    ? curriculum.levels.length
+                                                    : 0}{" "}
                                                 levels
                                             </span>
                                         </div>
                                     </div>
+                                )}
+
+                                {curriculum.description && (
+                                    <p
+                                        className="text-muted text-sm"
+                                        style={{
+                                            marginBottom: "0.75rem",
+                                            lineHeight: "1.3",
+                                            display: "-webkit-box",
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: "vertical",
+                                            overflow: "hidden",
+                                        }}
+                                    >
+                                        {curriculum.description}
+                                    </p>
                                 )}
 
                                 {nextProject && (
@@ -275,7 +327,8 @@ const Dashboard = () => {
                                                             fontWeight: "500",
                                                         }}
                                                     >
-                                                        {nextProject.name}
+                                                        {nextProject.name ||
+                                                            "Untitled Project"}
                                                     </Link>
                                                     {nextProject.identifier && (
                                                         <span
@@ -305,19 +358,27 @@ const Dashboard = () => {
                                                 >
                                                     <span className="text-muted text-xs">
                                                         Stage{" "}
-                                                        {nextProject.stage}
+                                                        {nextProject.stage ||
+                                                            "N/A"}
                                                         {nextProject.order &&
                                                             ` #${nextProject.order}`}
                                                     </span>
                                                     {(() => {
                                                         const stageDefinition =
-                                                            curriculum.stages?.find(
-                                                                (s) =>
-                                                                    s.stageNumber ===
-                                                                    nextProject.stage
-                                                            );
+                                                            curriculum.stages &&
+                                                            Array.isArray(
+                                                                curriculum.stages
+                                                            )
+                                                                ? curriculum.stages.find(
+                                                                      (s) =>
+                                                                          s &&
+                                                                          s.stageNumber ===
+                                                                              nextProject.stage
+                                                                  )
+                                                                : null;
                                                         if (
-                                                            stageDefinition?.name
+                                                            stageDefinition &&
+                                                            stageDefinition.name
                                                         ) {
                                                             return (
                                                                 <span className="text-info text-xs">
@@ -338,7 +399,8 @@ const Dashboard = () => {
                                                             );
                                                         return level ? (
                                                             <span className="text-primary text-xs">
-                                                                {level.name}
+                                                                {level.name ||
+                                                                    "Unnamed Level"}
                                                                 {level.defaultIdentifier &&
                                                                     ` (${level.defaultIdentifier})`}
                                                             </span>
@@ -357,7 +419,7 @@ const Dashboard = () => {
                                                     className={
                                                         PROJECT_STATE_COLORS[
                                                             nextProject.state
-                                                        ]
+                                                        ] || "text-muted"
                                                     }
                                                     style={{
                                                         fontSize: "0.75rem",
@@ -366,7 +428,8 @@ const Dashboard = () => {
                                                     ●
                                                 </span>
                                                 {nextProject.githubRepo &&
-                                                    user?.githubUsername && (
+                                                    user &&
+                                                    user.githubUsername && (
                                                         <a
                                                             href={constructGithubUrl(
                                                                 user.githubUsername,
@@ -425,7 +488,9 @@ const Dashboard = () => {
                 <div className="mb-1">
                     <p className="text-error mb-1">
                         ⚠️ Are you sure you want to delete "
-                        {curriculumToDelete?.name}"?
+                        {(curriculumToDelete && curriculumToDelete.name) ||
+                            "this curriculum"}
+                        "?
                     </p>
                     <p className="text-muted text-sm">
                         This will permanently delete the curriculum and all

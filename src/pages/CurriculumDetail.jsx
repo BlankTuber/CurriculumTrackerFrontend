@@ -74,7 +74,9 @@ const CurriculumDetail = () => {
     });
 
     useEffect(() => {
-        fetchCurriculum();
+        if (id) {
+            fetchCurriculum();
+        }
     }, [id]);
 
     const showNotification = (type, title, message) => {
@@ -97,15 +99,28 @@ const CurriculumDetail = () => {
         try {
             setError("");
             const data = await curriculumAPI.getById(id);
+
+            if (!data || !data.curriculum) {
+                throw new Error("Curriculum not found");
+            }
+
             setCurriculum(data.curriculum);
         } catch (error) {
-            setError(error.message);
+            setError(error.message || "Failed to load curriculum");
         } finally {
             setLoading(false);
         }
     };
 
     const handleEditSuccess = (updatedCurriculum) => {
+        if (!updatedCurriculum) {
+            showNotification(
+                "error",
+                "Error",
+                "Invalid curriculum data received"
+            );
+            return;
+        }
         setCurriculum(updatedCurriculum);
         setShowEditModal(false);
         showNotification(
@@ -116,6 +131,11 @@ const CurriculumDetail = () => {
     };
 
     const handleProjectSuccess = (newProject) => {
+        if (!newProject) {
+            showNotification("error", "Error", "Invalid project data received");
+            return;
+        }
+
         const projectWithCurriculum = {
             ...newProject,
             curriculum: newProject.curriculum || {
@@ -132,6 +152,14 @@ const CurriculumDetail = () => {
     };
 
     const handleResourceSuccess = (newResource) => {
+        if (!newResource) {
+            showNotification(
+                "error",
+                "Error",
+                "Invalid resource data received"
+            );
+            return;
+        }
         setCurriculum((prev) => ({
             ...prev,
             resources: [...(prev.resources || []), newResource],
@@ -141,6 +169,10 @@ const CurriculumDetail = () => {
     };
 
     const handleLevelSuccess = (newLevel) => {
+        if (!newLevel) {
+            showNotification("error", "Error", "Invalid level data received");
+            return;
+        }
         setCurriculum((prev) => ({
             ...prev,
             levels: [...(prev.levels || []), newLevel],
@@ -150,6 +182,10 @@ const CurriculumDetail = () => {
     };
 
     const handleStageSuccess = (newStage) => {
+        if (!newStage) {
+            showNotification("error", "Error", "Invalid stage data received");
+            return;
+        }
         setCurriculum((prev) => ({
             ...prev,
             stages: [...(prev.stages || []), newStage],
@@ -159,9 +195,13 @@ const CurriculumDetail = () => {
     };
 
     const handleEditLevelSuccess = (updatedLevel) => {
+        if (!updatedLevel) {
+            showNotification("error", "Error", "Invalid level data received");
+            return;
+        }
         setCurriculum((prev) => ({
             ...prev,
-            levels: prev.levels.map((level) =>
+            levels: (prev.levels || []).map((level) =>
                 level._id === updatedLevel._id ? updatedLevel : level
             ),
         }));
@@ -171,9 +211,13 @@ const CurriculumDetail = () => {
     };
 
     const handleEditStageSuccess = (updatedStage) => {
+        if (!updatedStage) {
+            showNotification("error", "Error", "Invalid stage data received");
+            return;
+        }
         setCurriculum((prev) => ({
             ...prev,
-            stages: prev.stages.map((stage) =>
+            stages: (prev.stages || []).map((stage) =>
                 stage._id === updatedStage._id ? updatedStage : stage
             ),
         }));
@@ -183,14 +227,27 @@ const CurriculumDetail = () => {
     };
 
     const handleUpdateProjectState = async (project, newState) => {
+        if (
+            !project ||
+            !project._id ||
+            !Object.values(PROJECT_STATES).includes(newState)
+        ) {
+            showNotification("error", "Error", "Invalid project or state");
+            return;
+        }
+
         try {
             const result = await projectAPI.update(project._id, {
                 state: newState,
             });
 
+            if (!result || !result.project) {
+                throw new Error("Invalid response from server");
+            }
+
             setCurriculum((prev) => ({
                 ...prev,
-                projects: prev.projects.map((p) =>
+                projects: (prev.projects || []).map((p) =>
                     p._id === project._id
                         ? {
                               ...result.project,
@@ -207,7 +264,9 @@ const CurriculumDetail = () => {
             showNotification(
                 "success",
                 "Success",
-                `Project "${project.name}" state updated to ${PROJECT_STATE_LABELS[newState]}!`
+                `Project "${project.name || "Untitled"}" state updated to ${
+                    PROJECT_STATE_LABELS[newState]
+                }!`
             );
         } catch (error) {
             showNotification(
@@ -219,18 +278,22 @@ const CurriculumDetail = () => {
     };
 
     const handleDeleteProjectClick = (project) => {
+        if (!project || !project._id) {
+            showNotification("error", "Error", "Invalid project");
+            return;
+        }
         setProjectToDelete(project);
         setShowDeleteProjectModal(true);
     };
 
     const handleDeleteProjectConfirm = async () => {
-        if (!projectToDelete) return;
+        if (!projectToDelete || !projectToDelete._id) return;
 
         try {
             await projectAPI.delete(projectToDelete._id);
             setCurriculum((prev) => ({
                 ...prev,
-                projects: prev.projects.filter(
+                projects: (prev.projects || []).filter(
                     (p) => p._id !== projectToDelete._id
                 ),
             }));
@@ -256,18 +319,22 @@ const CurriculumDetail = () => {
     };
 
     const handleDeleteResourceClick = (resource) => {
+        if (!resource || !resource._id) {
+            showNotification("error", "Error", "Invalid resource");
+            return;
+        }
         setResourceToDelete(resource);
         setShowDeleteResourceModal(true);
     };
 
     const handleDeleteResourceConfirm = async () => {
-        if (!resourceToDelete) return;
+        if (!resourceToDelete || !resourceToDelete._id) return;
 
         try {
             await curriculumAPI.deleteResource(resourceToDelete._id);
             setCurriculum((prev) => ({
                 ...prev,
-                resources: prev.resources.filter(
+                resources: (prev.resources || []).filter(
                     (r) => r._id !== resourceToDelete._id
                 ),
             }));
@@ -293,18 +360,24 @@ const CurriculumDetail = () => {
     };
 
     const handleDeleteLevelClick = (level) => {
+        if (!level || !level._id) {
+            showNotification("error", "Error", "Invalid level");
+            return;
+        }
         setLevelToDelete(level);
         setShowDeleteLevelModal(true);
     };
 
     const handleDeleteLevelConfirm = async () => {
-        if (!levelToDelete) return;
+        if (!levelToDelete || !levelToDelete._id) return;
 
         try {
             await levelAPI.delete(levelToDelete._id);
             setCurriculum((prev) => ({
                 ...prev,
-                levels: prev.levels.filter((l) => l._id !== levelToDelete._id),
+                levels: (prev.levels || []).filter(
+                    (l) => l._id !== levelToDelete._id
+                ),
             }));
             setShowDeleteLevelModal(false);
             setLevelToDelete(null);
@@ -328,18 +401,24 @@ const CurriculumDetail = () => {
     };
 
     const handleDeleteStageClick = (stage) => {
+        if (!stage || !stage._id) {
+            showNotification("error", "Error", "Invalid stage");
+            return;
+        }
         setStageToDelete(stage);
         setShowDeleteStageModal(true);
     };
 
     const handleDeleteStageConfirm = async () => {
-        if (!stageToDelete) return;
+        if (!stageToDelete || !stageToDelete._id) return;
 
         try {
             await stageAPI.delete(stageToDelete._id);
             setCurriculum((prev) => ({
                 ...prev,
-                stages: prev.stages.filter((s) => s._id !== stageToDelete._id),
+                stages: (prev.stages || []).filter(
+                    (s) => s._id !== stageToDelete._id
+                ),
             }));
             setShowDeleteStageModal(false);
             setStageToDelete(null);
@@ -363,11 +442,19 @@ const CurriculumDetail = () => {
     };
 
     const handleEditLevelClick = (level) => {
+        if (!level || !level._id) {
+            showNotification("error", "Error", "Invalid level");
+            return;
+        }
         setLevelToEdit(level);
         setShowEditLevelModal(true);
     };
 
     const handleEditStageClick = (stage) => {
+        if (!stage || !stage._id) {
+            showNotification("error", "Error", "Invalid stage");
+            return;
+        }
         setStageToEdit(stage);
         setShowEditStageModal(true);
     };
@@ -409,7 +496,13 @@ const CurriculumDetail = () => {
     };
 
     const getFilteredProjects = () => {
-        if (!curriculum?.projects) return [];
+        if (
+            !curriculum ||
+            !curriculum.projects ||
+            !Array.isArray(curriculum.projects)
+        ) {
+            return [];
+        }
 
         let filteredProjects = [...curriculum.projects];
 
@@ -417,18 +510,25 @@ const CurriculumDetail = () => {
             if (searchQuery) {
                 const query = searchQuery.toLowerCase();
                 filteredProjects = filteredProjects.filter((project) => {
-                    const matchesName = project.name
-                        .toLowerCase()
-                        .includes(query);
-                    const matchesDescription = project.description
-                        .toLowerCase()
-                        .includes(query);
-                    const matchesIdentifier = project.identifier
-                        ?.toLowerCase()
-                        .includes(query);
-                    const matchesTopics = project.topics?.some((topic) =>
-                        topic.toLowerCase().includes(query)
-                    );
+                    if (!project) return false;
+
+                    const matchesName =
+                        project.name &&
+                        project.name.toLowerCase().includes(query);
+                    const matchesDescription =
+                        project.description &&
+                        project.description.toLowerCase().includes(query);
+                    const matchesIdentifier =
+                        project.identifier &&
+                        project.identifier.toLowerCase().includes(query);
+                    const matchesTopics =
+                        project.topics &&
+                        Array.isArray(project.topics) &&
+                        project.topics.some(
+                            (topic) =>
+                                topic && topic.toLowerCase().includes(query)
+                        );
+
                     return (
                         matchesName ||
                         matchesDescription ||
@@ -448,14 +548,18 @@ const CurriculumDetail = () => {
             if (levelFilter) {
                 filteredProjects = filterProjectsByLevel(
                     filteredProjects,
-                    curriculum.levels,
+                    curriculum.levels || [],
                     levelFilter
                 );
             }
 
             if (topicFilter) {
-                filteredProjects = filteredProjects.filter((project) =>
-                    project.topics?.includes(topicFilter)
+                filteredProjects = filteredProjects.filter(
+                    (project) =>
+                        project &&
+                        project.topics &&
+                        Array.isArray(project.topics) &&
+                        project.topics.includes(topicFilter)
                 );
             }
 
@@ -463,24 +567,28 @@ const CurriculumDetail = () => {
                 if (githubFilter === "with") {
                     filteredProjects = filteredProjects.filter(
                         (project) =>
-                            project.githubRepo && project.githubRepo.trim()
+                            project &&
+                            project.githubRepo &&
+                            project.githubRepo.trim()
                     );
                 } else if (githubFilter === "without") {
                     filteredProjects = filteredProjects.filter(
                         (project) =>
-                            !project.githubRepo || !project.githubRepo.trim()
+                            !project ||
+                            !project.githubRepo ||
+                            !project.githubRepo.trim()
                     );
                 }
             }
 
             if (stateFilter) {
                 filteredProjects = filteredProjects.filter(
-                    (p) => p.state === stateFilter
+                    (p) => p && p.state === stateFilter
                 );
             }
         } else if (selectedLevel && selectedStage) {
             filteredProjects = filteredProjects.filter(
-                (project) => project.stage === selectedStage
+                (project) => project && project.stage === selectedStage
             );
         } else {
             return [];
@@ -490,12 +598,14 @@ const CurriculumDetail = () => {
     };
 
     const renderProjectCard = (project) => {
+        if (!project || !project._id) return null;
+
         const projectLevel = getLevelForStage(
             curriculum.levels || [],
             project.stage
         );
         const githubUrl = constructGithubUrl(
-            user?.githubUsername,
+            user && user.githubUsername,
             project.githubRepo
         );
 
@@ -524,7 +634,7 @@ const CurriculumDetail = () => {
                                 fontWeight: "500",
                             }}
                         >
-                            {project.name}
+                            {project.name || "Untitled Project"}
                         </Link>
                         {project.identifier && (
                             <span
@@ -539,7 +649,7 @@ const CurriculumDetail = () => {
                         )}
                         {!selectedStage && (
                             <span className="text-muted text-xs">
-                                Stage {project.stage}
+                                Stage {project.stage || "N/A"}
                                 {project.order && ` #${project.order}`}
                             </span>
                         )}
@@ -550,17 +660,20 @@ const CurriculumDetail = () => {
                         )}
                         {projectLevel && !selectedLevel && (
                             <span className="text-primary text-xs">
-                                {projectLevel.name}
+                                {projectLevel.name || "Unnamed Level"}
                             </span>
                         )}
                         <span
-                            className={PROJECT_STATE_COLORS[project.state]}
+                            className={
+                                PROJECT_STATE_COLORS[project.state] ||
+                                "text-muted"
+                            }
                             style={{
                                 fontSize: "0.75rem",
                                 fontWeight: "500",
                             }}
                         >
-                            {PROJECT_STATE_LABELS[project.state]}
+                            {PROJECT_STATE_LABELS[project.state] || "Unknown"}
                         </span>
                         {githubUrl && (
                             <a
@@ -573,45 +686,49 @@ const CurriculumDetail = () => {
                             </a>
                         )}
                     </div>
-                    {project.topics && project.topics.length > 0 && (
-                        <div
-                            className="flex"
-                            style={{
-                                gap: "0.25rem",
-                                flexWrap: "wrap",
-                            }}
-                        >
-                            {project.topics.slice(0, 4).map((topic, index) => (
-                                <span
-                                    key={index}
-                                    style={{
-                                        background: "var(--bg-primary)",
-                                        padding: "0.125rem 0.25rem",
-                                        borderRadius: "3px",
-                                        fontSize: "0.65rem",
-                                        color: "var(--text-secondary)",
-                                    }}
-                                >
-                                    {topic}
-                                </span>
-                            ))}
-                            {project.topics.length > 4 && (
-                                <span
-                                    className="text-muted"
-                                    style={{
-                                        fontSize: "0.65rem",
-                                        fontStyle: "italic",
-                                    }}
-                                >
-                                    +{project.topics.length - 4} more
-                                </span>
-                            )}
-                        </div>
-                    )}
+                    {project.topics &&
+                        Array.isArray(project.topics) &&
+                        project.topics.length > 0 && (
+                            <div
+                                className="flex"
+                                style={{
+                                    gap: "0.25rem",
+                                    flexWrap: "wrap",
+                                }}
+                            >
+                                {project.topics
+                                    .slice(0, 4)
+                                    .map((topic, index) => (
+                                        <span
+                                            key={index}
+                                            style={{
+                                                background: "var(--bg-primary)",
+                                                padding: "0.125rem 0.25rem",
+                                                borderRadius: "3px",
+                                                fontSize: "0.65rem",
+                                                color: "var(--text-secondary)",
+                                            }}
+                                        >
+                                            {topic}
+                                        </span>
+                                    ))}
+                                {project.topics.length > 4 && (
+                                    <span
+                                        className="text-muted"
+                                        style={{
+                                            fontSize: "0.65rem",
+                                            fontStyle: "italic",
+                                        }}
+                                    >
+                                        +{project.topics.length - 4} more
+                                    </span>
+                                )}
+                            </div>
+                        )}
                 </div>
                 <div className="btn-group">
                     <select
-                        value={project.state}
+                        value={project.state || PROJECT_STATES.NOT_STARTED}
                         onChange={(e) =>
                             handleUpdateProjectState(project, e.target.value)
                         }
@@ -656,9 +773,15 @@ const CurriculumDetail = () => {
         );
     };
 
-    const sortedLevels = sortLevelsByOrder(curriculum?.levels || []);
+    const sortedLevels = sortLevelsByOrder(
+        (curriculum && curriculum.levels) || []
+    );
     const sortedStages =
-        curriculum?.stages?.sort((a, b) => a.stageNumber - b.stageNumber) || [];
+        curriculum && curriculum.stages && Array.isArray(curriculum.stages)
+            ? curriculum.stages.sort(
+                  (a, b) => (a.stageNumber || 0) - (b.stageNumber || 0)
+              )
+            : [];
     const sortedProjects = getFilteredProjects();
     const hasActiveFilters = isUsingFilters();
     const hasHierarchySelection = selectedLevel && selectedStage;
@@ -695,7 +818,7 @@ const CurriculumDetail = () => {
         );
     }
 
-    const { total, completed } = getProjectStats(curriculum?.projects || []);
+    const { total, completed } = getProjectStats(curriculum.projects || []);
 
     return (
         <div>
@@ -708,7 +831,7 @@ const CurriculumDetail = () => {
                     >
                         ← Back to Dashboard
                     </Link>
-                    <h1>{curriculum.name}</h1>
+                    <h1>{curriculum.name || "Untitled Curriculum"}</h1>
                     {curriculum.description && (
                         <p className="text-muted text-sm">
                             {curriculum.description}
@@ -784,11 +907,12 @@ const CurriculumDetail = () => {
                             <div className="flex-between">
                                 <h2 className="card-title">
                                     Filtered Projects ({sortedProjects.length}
-                                    {curriculum.projects && (
-                                        <span className="text-muted">
-                                            /{curriculum.projects.length}
-                                        </span>
-                                    )}
+                                    {curriculum.projects &&
+                                        Array.isArray(curriculum.projects) && (
+                                            <span className="text-muted">
+                                                /{curriculum.projects.length}
+                                            </span>
+                                        )}
                                     )
                                 </h2>
                                 <button
@@ -834,86 +958,99 @@ const CurriculumDetail = () => {
                     {sortedLevels.length > 0 ? (
                         <div className="scrollable-list">
                             <div className="compact-list">
-                                {sortedLevels.map((level) => (
-                                    <div
-                                        key={level._id}
-                                        className="compact-item"
-                                    >
-                                        <div style={{ flex: 1 }}>
-                                            <div
-                                                className="flex"
-                                                style={{
-                                                    gap: "0.5rem",
-                                                    alignItems: "center",
-                                                    marginBottom: "0.25rem",
-                                                    flexWrap: "wrap",
-                                                }}
-                                            >
-                                                <strong
+                                {sortedLevels.map((level) => {
+                                    if (!level || !level._id) return null;
+                                    return (
+                                        <div
+                                            key={level._id}
+                                            className="compact-item"
+                                        >
+                                            <div style={{ flex: 1 }}>
+                                                <div
+                                                    className="flex"
                                                     style={{
-                                                        fontSize: "0.9rem",
+                                                        gap: "0.5rem",
+                                                        alignItems: "center",
+                                                        marginBottom: "0.25rem",
+                                                        flexWrap: "wrap",
                                                     }}
                                                 >
-                                                    {level.name}
-                                                </strong>
-                                                <span className="text-muted text-xs">
-                                                    Stages {level.stageStart}-
-                                                    {level.stageEnd}
-                                                </span>
-                                                <span className="text-muted text-xs">
-                                                    Order {level.order}
-                                                </span>
-                                                {level.defaultIdentifier && (
-                                                    <span className="text-primary text-xs">
-                                                        ID:{" "}
-                                                        {
-                                                            level.defaultIdentifier
-                                                        }
+                                                    <strong
+                                                        style={{
+                                                            fontSize: "0.9rem",
+                                                        }}
+                                                    >
+                                                        {level.name ||
+                                                            "Unnamed Level"}
+                                                    </strong>
+                                                    <span className="text-muted text-xs">
+                                                        Stages{" "}
+                                                        {level.stageStart ||
+                                                            "N/A"}
+                                                        -
+                                                        {level.stageEnd ||
+                                                            "N/A"}
                                                     </span>
+                                                    <span className="text-muted text-xs">
+                                                        Order{" "}
+                                                        {level.order || "N/A"}
+                                                    </span>
+                                                    {level.defaultIdentifier && (
+                                                        <span className="text-primary text-xs">
+                                                            ID:{" "}
+                                                            {
+                                                                level.defaultIdentifier
+                                                            }
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {level.description && (
+                                                    <p
+                                                        className="text-muted text-xs"
+                                                        style={{
+                                                            margin: 0,
+                                                            lineHeight: "1.3",
+                                                        }}
+                                                    >
+                                                        {level.description}
+                                                    </p>
                                                 )}
                                             </div>
-                                            {level.description && (
-                                                <p
-                                                    className="text-muted text-xs"
+                                            <div className="btn-group">
+                                                <button
+                                                    onClick={() =>
+                                                        handleEditLevelClick(
+                                                            level
+                                                        )
+                                                    }
+                                                    className="btn btn-secondary btn-small"
                                                     style={{
-                                                        margin: 0,
-                                                        lineHeight: "1.3",
+                                                        padding:
+                                                            "0.25rem 0.5rem",
+                                                        fontSize: "0.7rem",
                                                     }}
                                                 >
-                                                    {level.description}
-                                                </p>
-                                            )}
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handleDeleteLevelClick(
+                                                            level
+                                                        )
+                                                    }
+                                                    className="btn btn-danger btn-small"
+                                                    style={{
+                                                        padding:
+                                                            "0.25rem 0.5rem",
+                                                        fontSize: "0.7rem",
+                                                    }}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="btn-group">
-                                            <button
-                                                onClick={() =>
-                                                    handleEditLevelClick(level)
-                                                }
-                                                className="btn btn-secondary btn-small"
-                                                style={{
-                                                    padding: "0.25rem 0.5rem",
-                                                    fontSize: "0.7rem",
-                                                }}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() =>
-                                                    handleDeleteLevelClick(
-                                                        level
-                                                    )
-                                                }
-                                                className="btn btn-danger btn-small"
-                                                style={{
-                                                    padding: "0.25rem 0.5rem",
-                                                    fontSize: "0.7rem",
-                                                }}
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     ) : (
@@ -941,81 +1078,90 @@ const CurriculumDetail = () => {
                     {sortedStages.length > 0 ? (
                         <div className="scrollable-list">
                             <div className="compact-list">
-                                {sortedStages.map((stage) => (
-                                    <div
-                                        key={stage._id}
-                                        className="compact-item"
-                                    >
-                                        <div style={{ flex: 1 }}>
-                                            <div
-                                                className="flex"
-                                                style={{
-                                                    gap: "0.5rem",
-                                                    alignItems: "center",
-                                                    marginBottom: "0.25rem",
-                                                    flexWrap: "wrap",
-                                                }}
-                                            >
-                                                <strong
+                                {sortedStages.map((stage) => {
+                                    if (!stage || !stage._id) return null;
+                                    return (
+                                        <div
+                                            key={stage._id}
+                                            className="compact-item"
+                                        >
+                                            <div style={{ flex: 1 }}>
+                                                <div
+                                                    className="flex"
                                                     style={{
-                                                        fontSize: "0.9rem",
+                                                        gap: "0.5rem",
+                                                        alignItems: "center",
+                                                        marginBottom: "0.25rem",
+                                                        flexWrap: "wrap",
                                                     }}
                                                 >
-                                                    Stage {stage.stageNumber}
-                                                    {stage.name &&
-                                                        `: ${stage.name}`}
-                                                </strong>
-                                                {stage.defaultGithubRepo && (
-                                                    <span className="text-primary text-xs">
-                                                        Repo:{" "}
-                                                        {
-                                                            stage.defaultGithubRepo
-                                                        }
-                                                    </span>
+                                                    <strong
+                                                        style={{
+                                                            fontSize: "0.9rem",
+                                                        }}
+                                                    >
+                                                        Stage{" "}
+                                                        {stage.stageNumber ||
+                                                            "N/A"}
+                                                        {stage.name &&
+                                                            `: ${stage.name}`}
+                                                    </strong>
+                                                    {stage.defaultGithubRepo && (
+                                                        <span className="text-primary text-xs">
+                                                            Repo:{" "}
+                                                            {
+                                                                stage.defaultGithubRepo
+                                                            }
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {stage.description && (
+                                                    <p
+                                                        className="text-muted text-xs"
+                                                        style={{
+                                                            margin: 0,
+                                                            lineHeight: "1.3",
+                                                        }}
+                                                    >
+                                                        {stage.description}
+                                                    </p>
                                                 )}
                                             </div>
-                                            {stage.description && (
-                                                <p
-                                                    className="text-muted text-xs"
+                                            <div className="btn-group">
+                                                <button
+                                                    onClick={() =>
+                                                        handleEditStageClick(
+                                                            stage
+                                                        )
+                                                    }
+                                                    className="btn btn-secondary btn-small"
                                                     style={{
-                                                        margin: 0,
-                                                        lineHeight: "1.3",
+                                                        padding:
+                                                            "0.25rem 0.5rem",
+                                                        fontSize: "0.7rem",
                                                     }}
                                                 >
-                                                    {stage.description}
-                                                </p>
-                                            )}
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handleDeleteStageClick(
+                                                            stage
+                                                        )
+                                                    }
+                                                    className="btn btn-danger btn-small"
+                                                    style={{
+                                                        padding:
+                                                            "0.25rem 0.5rem",
+                                                        fontSize: "0.7rem",
+                                                    }}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="btn-group">
-                                            <button
-                                                onClick={() =>
-                                                    handleEditStageClick(stage)
-                                                }
-                                                className="btn btn-secondary btn-small"
-                                                style={{
-                                                    padding: "0.25rem 0.5rem",
-                                                    fontSize: "0.7rem",
-                                                }}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() =>
-                                                    handleDeleteStageClick(
-                                                        stage
-                                                    )
-                                                }
-                                                className="btn btn-danger btn-small"
-                                                style={{
-                                                    padding: "0.25rem 0.5rem",
-                                                    fontSize: "0.7rem",
-                                                }}
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     ) : (
@@ -1030,7 +1176,12 @@ const CurriculumDetail = () => {
                 <div className="card-header">
                     <div className="flex-between">
                         <h2 className="card-title">
-                            Resources ({curriculum.resources?.length || 0})
+                            Resources (
+                            {curriculum.resources &&
+                            Array.isArray(curriculum.resources)
+                                ? curriculum.resources.length
+                                : 0}
+                            )
                         </h2>
                         <button
                             onClick={() => setShowResourceModal(true)}
@@ -1041,59 +1192,71 @@ const CurriculumDetail = () => {
                     </div>
                 </div>
 
-                {curriculum.resources && curriculum.resources.length > 0 ? (
+                {curriculum.resources &&
+                Array.isArray(curriculum.resources) &&
+                curriculum.resources.length > 0 ? (
                     <div className="scrollable-list">
                         <div className="compact-list">
-                            {curriculum.resources.map((resource) => (
-                                <div
-                                    key={resource._id}
-                                    className="compact-item"
-                                >
-                                    <div style={{ flex: 1 }}>
-                                        <div
-                                            className="flex"
-                                            style={{
-                                                gap: "0.5rem",
-                                                alignItems: "center",
-                                            }}
-                                        >
-                                            <strong
+                            {curriculum.resources.map((resource) => {
+                                if (!resource || !resource._id) return null;
+                                return (
+                                    <div
+                                        key={resource._id}
+                                        className="compact-item"
+                                    >
+                                        <div style={{ flex: 1 }}>
+                                            <div
+                                                className="flex"
                                                 style={{
-                                                    fontSize: "0.9rem",
+                                                    gap: "0.5rem",
+                                                    alignItems: "center",
                                                 }}
                                             >
-                                                {resource.name}
-                                            </strong>
-                                            <span className="text-muted text-xs">
-                                                {resource.type
-                                                    .charAt(0)
-                                                    .toUpperCase() +
-                                                    resource.type.slice(1)}
-                                            </span>
+                                                <strong
+                                                    style={{
+                                                        fontSize: "0.9rem",
+                                                    }}
+                                                >
+                                                    {resource.name ||
+                                                        "Untitled Resource"}
+                                                </strong>
+                                                <span className="text-muted text-xs">
+                                                    {resource.type
+                                                        ? resource.type
+                                                              .charAt(0)
+                                                              .toUpperCase() +
+                                                          resource.type.slice(1)
+                                                        : "Unknown Type"}
+                                                </span>
+                                            </div>
+                                            {resource.link && (
+                                                <a
+                                                    href={resource.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-primary text-xs"
+                                                >
+                                                    {resource.link}
+                                                </a>
+                                            )}
                                         </div>
-                                        <a
-                                            href={resource.link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-primary text-xs"
+                                        <button
+                                            onClick={() =>
+                                                handleDeleteResourceClick(
+                                                    resource
+                                                )
+                                            }
+                                            className="btn btn-danger btn-small"
+                                            style={{
+                                                padding: "0.25rem 0.5rem",
+                                                fontSize: "0.7rem",
+                                            }}
                                         >
-                                            {resource.link}
-                                        </a>
+                                            Delete
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() =>
-                                            handleDeleteResourceClick(resource)
-                                        }
-                                        className="btn btn-danger btn-small"
-                                        style={{
-                                            padding: "0.25rem 0.5rem",
-                                            fontSize: "0.7rem",
-                                        }}
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 ) : (
@@ -1108,7 +1271,8 @@ const CurriculumDetail = () => {
                     <div className="card-header">
                         <div className="flex-between">
                             <h2 className="card-title">
-                                Projects in {selectedLevel.name} - Stage{" "}
+                                Projects in{" "}
+                                {selectedLevel.name || "Selected Level"} - Stage{" "}
                                 {selectedStage} ({sortedProjects.length})
                             </h2>
                             <button
@@ -1128,7 +1292,8 @@ const CurriculumDetail = () => {
                         </div>
                     ) : (
                         <p className="text-muted text-center text-sm">
-                            No projects found in {selectedLevel.name}, Stage{" "}
+                            No projects found in{" "}
+                            {selectedLevel.name || "Selected Level"}, Stage{" "}
                             {selectedStage}
                         </p>
                     )}
@@ -1229,7 +1394,9 @@ const CurriculumDetail = () => {
                 <div className="mb-1">
                     <p className="text-error mb-1">
                         ⚠️ Are you sure you want to delete "
-                        {projectToDelete?.name}"?
+                        {(projectToDelete && projectToDelete.name) ||
+                            "this project"}
+                        "?
                     </p>
                     <p className="text-muted text-sm">
                         This will permanently delete the project and all
@@ -1261,7 +1428,9 @@ const CurriculumDetail = () => {
                 <div className="mb-1">
                     <p className="text-error mb-1">
                         ⚠️ Are you sure you want to delete "
-                        {resourceToDelete?.name}"?
+                        {(resourceToDelete && resourceToDelete.name) ||
+                            "this resource"}
+                        "?
                     </p>
                     <p className="text-muted text-sm">
                         This action cannot be undone.
@@ -1292,7 +1461,8 @@ const CurriculumDetail = () => {
                 <div className="mb-1">
                     <p className="text-error mb-1">
                         ⚠️ Are you sure you want to delete "
-                        {levelToDelete?.name}"?
+                        {(levelToDelete && levelToDelete.name) || "this level"}
+                        "?
                     </p>
                     <p className="text-muted text-sm">
                         This action cannot be undone.
@@ -1323,8 +1493,11 @@ const CurriculumDetail = () => {
                 <div className="mb-1">
                     <p className="text-error mb-1">
                         ⚠️ Are you sure you want to delete "Stage{" "}
-                        {stageToDelete?.stageNumber}
-                        {stageToDelete?.name && `: ${stageToDelete.name}`}"?
+                        {(stageToDelete && stageToDelete.stageNumber) || "N/A"}
+                        {stageToDelete &&
+                            stageToDelete.name &&
+                            `: ${stageToDelete.name}`}
+                        "?
                     </p>
                     <p className="text-muted text-sm">
                         This action cannot be undone.

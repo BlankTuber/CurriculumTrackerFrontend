@@ -23,9 +23,9 @@ const ResourceForm = ({
     const isProjectResource = !!projectId;
 
     const [formData, setFormData] = useState({
-        name: resource?.name || "",
-        type: resource?.type || "documentation",
-        link: resource?.link || "",
+        name: (resource && resource.name) || "",
+        type: (resource && resource.type) || "documentation",
+        link: (resource && resource.link) || "",
     });
 
     const [loading, setLoading] = useState(false);
@@ -37,41 +37,51 @@ const ResourceForm = ({
             ...prev,
             [name]: value,
         }));
-    };
-
-    const validateForm = () => {
-        if (!formData.name.trim()) {
-            setError("Resource name is required");
-            return false;
-        }
-
-        if (formData.name.length > 100) {
-            setError("Resource name must be 100 characters or less");
-            return false;
-        }
-
-        if (!formData.link.trim()) {
-            setError("Resource URL is required");
-            return false;
-        }
-
-        if (!isValidUrl(formData.link)) {
-            setError(
-                "Please provide a valid URL (must include http:// or https://)"
-            );
-            return false;
-        }
-
-        return true;
+        if (error) setError("");
     };
 
     const isValidUrl = (string) => {
+        if (!string || typeof string !== "string") return false;
         try {
             new URL(string);
             return true;
         } catch (_) {
             return false;
         }
+    };
+
+    const validateForm = () => {
+        const trimmedName = formData.name.trim();
+        const trimmedLink = formData.link.trim();
+
+        if (!trimmedName) {
+            setError("Resource name is required");
+            return false;
+        }
+
+        if (trimmedName.length > 100) {
+            setError("Resource name must be 100 characters or less");
+            return false;
+        }
+
+        if (!trimmedLink) {
+            setError("Resource URL is required");
+            return false;
+        }
+
+        if (!isValidUrl(trimmedLink)) {
+            setError(
+                "Please provide a valid URL (must include http:// or https://)"
+            );
+            return false;
+        }
+
+        if (!RESOURCE_TYPES.includes(formData.type)) {
+            setError("Please select a valid resource type");
+            return false;
+        }
+
+        return true;
     };
 
     const handleSubmit = async (e) => {
@@ -85,37 +95,61 @@ const ResourceForm = ({
         setError("");
 
         try {
+            const submitData = {
+                name: formData.name.trim(),
+                type: formData.type,
+                link: formData.link.trim(),
+            };
+
             let result;
 
             if (isEditing) {
+                if (!resource || !resource._id) {
+                    throw new Error("Resource ID is required for editing");
+                }
+
                 if (isProjectResource) {
                     result = await projectAPI.updateResource(
                         resource._id,
-                        formData
+                        submitData
                     );
                 } else {
                     result = await curriculumAPI.updateResource(
                         resource._id,
-                        formData
+                        submitData
                     );
                 }
             } else {
                 if (isProjectResource) {
+                    if (!projectId) {
+                        throw new Error("Project ID is required");
+                    }
                     result = await projectAPI.createResource(
                         projectId,
-                        formData
+                        submitData
                     );
                 } else {
+                    if (!curriculumId) {
+                        throw new Error("Curriculum ID is required");
+                    }
                     result = await curriculumAPI.createResource(
                         curriculumId,
-                        formData
+                        submitData
                     );
                 }
             }
 
-            onSuccess(result.resource || result.projectResource);
+            const resourceData = result.resource || result.projectResource;
+
+            if (!resourceData) {
+                throw new Error("Invalid response from server");
+            }
+
+            onSuccess(resourceData);
         } catch (error) {
-            setError(error.message);
+            setError(
+                error.message || "An error occurred while saving the resource"
+            );
         } finally {
             setLoading(false);
         }

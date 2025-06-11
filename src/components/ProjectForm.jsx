@@ -28,18 +28,21 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     const isEditing = !!project;
 
     const [formData, setFormData] = useState({
-        name: project?.name || "",
-        description: project?.description || "",
-        identifier: project?.identifier || "",
-        topics: project?.topics || [],
-        githubRepo: project?.githubRepo || "",
-        state: project?.state || PROJECT_STATES.NOT_STARTED,
-        stage: project?.stage || "",
-        order: project?.order || "",
+        name: (project && project.name) || "",
+        description: (project && project.description) || "",
+        identifier: (project && project.identifier) || "",
+        topics: project && Array.isArray(project.topics) ? project.topics : [],
+        githubRepo: (project && project.githubRepo) || "",
+        state: (project && project.state) || PROJECT_STATES.NOT_STARTED,
+        stage: project && project.stage ? project.stage.toString() : "",
+        order: project && project.order ? project.order.toString() : "",
     });
 
     const [projectResources, setProjectResources] = useState(
-        project?.projectResources && project.projectResources.length > 0
+        project &&
+            project.projectResources &&
+            Array.isArray(project.projectResources) &&
+            project.projectResources.length > 0
             ? project.projectResources
             : []
     );
@@ -52,44 +55,81 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        fetchProjectsAndCurriculum();
-    }, []);
+        if (curriculumId) {
+            fetchProjectsAndCurriculum();
+        }
+    }, [curriculumId]);
 
     useEffect(() => {
-        if (!defaultsSet && projectsLoaded && curriculumData) {
+        if (!defaultsSet && projectsLoaded) {
             setInitialDefaults();
             setDefaultsSet(true);
         }
-    }, [allProjects, curriculumData, isEditing, defaultsSet, projectsLoaded]);
+    }, [allProjects, isEditing, defaultsSet, projectsLoaded]);
 
     useEffect(() => {
-        if (formData.stage && !isEditing && defaultsSet && projectsLoaded) {
-            const defaultOrder = getNextAvailableOrder(
-                allProjects,
-                formData.stage
-            );
-            setFormData((prev) => ({
-                ...prev,
-                order: defaultOrder.toString(),
-            }));
+        if (!isEditing && projectsLoaded && curriculumData && formData.stage) {
+            const level = getLevelForStage(formData.stage);
+            const stageDefinition = getStageDefinition(formData.stage);
+
+            setFormData((prev) => {
+                const updates = {};
+
+                if (level && level.defaultIdentifier && !prev.identifier) {
+                    const identifierNumber = getNextIdentifierNumber(
+                        formData.stage
+                    );
+                    updates.identifier = `${level.defaultIdentifier}${identifierNumber}`;
+                }
+
+                if (
+                    stageDefinition &&
+                    stageDefinition.defaultGithubRepo &&
+                    !prev.githubRepo
+                ) {
+                    updates.githubRepo = stageDefinition.defaultGithubRepo;
+                }
+
+                return Object.keys(updates).length > 0
+                    ? { ...prev, ...updates }
+                    : prev;
+            });
         }
-    }, [formData.stage, allProjects, isEditing, defaultsSet, projectsLoaded]);
+    }, [
+        curriculumData,
+        projectsLoaded,
+        formData.stage,
+        allProjects,
+        isEditing,
+    ]);
 
     const fetchProjectsAndCurriculum = async () => {
         try {
+            setError("");
             const [projectsData, curriculumDetails] = await Promise.all([
                 projectAPI.getAll(),
                 curriculumAPI.getById(curriculumId),
             ]);
 
+            if (!curriculumDetails || !curriculumDetails.curriculum) {
+                throw new Error("Failed to load curriculum data");
+            }
+
+            const projects =
+                projectsData && Array.isArray(projectsData.projects)
+                    ? projectsData.projects
+                    : [];
+            const curriculum = curriculumDetails.curriculum;
+
             setAllProjects(
-                projectsData.projects.filter(
-                    (p) => p.curriculum._id === curriculumId
+                projects.filter(
+                    (p) =>
+                        p && p.curriculum && p.curriculum._id === curriculumId
                 )
             );
-            setCurriculumData(curriculumDetails.curriculum);
+            setCurriculumData(curriculum);
         } catch (error) {
-            console.error("Failed to fetch projects and curriculum:", error);
+            setError(`Failed to fetch curriculum data: ${error.message}`);
         } finally {
             setProjectsLoaded(true);
         }
@@ -98,12 +138,17 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     const setInitialDefaults = () => {
         if (isEditing) return;
 
-        const sortedByDate = [...allProjects].sort(
-            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
+        const sortedByDate = [...allProjects].sort((a, b) => {
+            const aDate = new Date(a.createdAt || 0);
+            const bDate = new Date(b.createdAt || 0);
+            return bDate - aDate;
+        });
         const mostRecentProject = sortedByDate[0];
 
-        const defaultStage = mostRecentProject ? mostRecentProject.stage : 1;
+        const defaultStage =
+            mostRecentProject && mostRecentProject.stage
+                ? mostRecentProject.stage
+                : 1;
         const defaultOrder = getNextAvailableOrder(allProjects, defaultStage);
 
         setFormData((prev) => ({
@@ -114,32 +159,72 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     };
 
     const getStageDefinition = (stageNumber) => {
-        if (!curriculumData?.stages || !stageNumber) return null;
+        if (
+            !curriculumData ||
+            !curriculumData.stages ||
+            !Array.isArray(curriculumData.stages) ||
+            !stageNumber
+        ) {
+            return null;
+        }
+        const stageNum = parseInt(stageNumber);
+        if (isNaN(stageNum)) return null;
+
         return curriculumData.stages.find(
-            (s) => s.stageNumber === parseInt(stageNumber)
+            (s) => s && s.stageNumber === stageNum
         );
     };
 
     const getInheritedGithubRepo = () => {
-        if (formData.githubRepo.trim()) {
+        if (formData.githubRepo && formData.githubRepo.trim()) {
             return formData.githubRepo;
         }
 
         const stageDefinition = getStageDefinition(formData.stage);
-        return stageDefinition?.defaultGithubRepo || "";
+        return (stageDefinition && stageDefinition.defaultGithubRepo) || "";
     };
 
     const getLevelForStage = (stageNumber) => {
-        if (!curriculumData?.levels || !stageNumber) return null;
+        if (
+            !curriculumData ||
+            !curriculumData.levels ||
+            !Array.isArray(curriculumData.levels) ||
+            !stageNumber
+        ) {
+            return null;
+        }
         const stage = parseInt(stageNumber);
+        if (isNaN(stage)) return null;
+
         return curriculumData.levels.find(
-            (level) => stage >= level.stageStart && stage <= level.stageEnd
+            (level) =>
+                level &&
+                typeof level.stageStart === "number" &&
+                typeof level.stageEnd === "number" &&
+                stage >= level.stageStart &&
+                stage <= level.stageEnd
         );
     };
 
     const getDefaultIdentifierPrefix = () => {
         const level = getLevelForStage(formData.stage);
-        return level?.defaultIdentifier || "";
+        return (level && level.defaultIdentifier) || "";
+    };
+
+    const getNextIdentifierNumber = (stage) => {
+        const level = getLevelForStage(stage);
+        if (!level) return 1;
+
+        const projectsInLevel = allProjects.filter((p) => {
+            if (!p || typeof p.stage !== "number") return false;
+            return (
+                p.stage >= level.stageStart &&
+                p.stage <= level.stageEnd &&
+                p._id !== (project && project._id)
+            );
+        });
+
+        return projectsInLevel.length + 1;
     };
 
     const handleChange = (e) => {
@@ -148,6 +233,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
             ...prev,
             [name]: value,
         }));
+        if (error) setError("");
     };
 
     const handleStageChange = (e) => {
@@ -159,9 +245,26 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                 const defaultOrder = getNextAvailableOrder(
                     allProjects,
                     stage,
-                    project?._id
+                    project && project._id
                 );
                 newData.order = defaultOrder.toString();
+
+                if (curriculumData) {
+                    const level = getLevelForStage(stage);
+                    const stageDefinition = getStageDefinition(stage);
+
+                    if (level && level.defaultIdentifier) {
+                        const identifierNumber = getNextIdentifierNumber(stage);
+                        newData.identifier = `${level.defaultIdentifier}${identifierNumber}`;
+                    } else {
+                        newData.identifier = "";
+                    }
+
+                    newData.githubRepo =
+                        (stageDefinition &&
+                            stageDefinition.defaultGithubRepo) ||
+                        "";
+                }
             }
 
             return newData;
@@ -171,7 +274,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     const handleTopicsChange = (newTopics) => {
         setFormData((prev) => ({
             ...prev,
-            topics: newTopics,
+            topics: Array.isArray(newTopics) ? newTopics : [],
         }));
     };
 
@@ -194,23 +297,36 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         setProjectResources((prev) => prev.filter((_, i) => i !== index));
     };
 
+    const isValidUrl = (string) => {
+        if (!string || typeof string !== "string") return false;
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    };
+
     const validateForm = () => {
-        if (!formData.name.trim()) {
+        const trimmedName = formData.name.trim();
+        const trimmedDescription = formData.description.trim();
+
+        if (!trimmedName) {
             setError("Project name is required");
             return false;
         }
 
-        if (formData.name.length > 100) {
+        if (trimmedName.length > 100) {
             setError("Project name must be 100 characters or less");
             return false;
         }
 
-        if (!formData.description.trim()) {
+        if (!trimmedDescription) {
             setError("Project description is required");
             return false;
         }
 
-        if (formData.description.length > 2000) {
+        if (trimmedDescription.length > 2000) {
             setError("Description must be 2000 characters or less");
             return false;
         }
@@ -247,7 +363,11 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                 return false;
             }
 
-            const usedOrders = getUsedOrders(allProjects, stage, project?._id);
+            const usedOrders = getUsedOrders(
+                allProjects,
+                stage,
+                project && project._id
+            );
             if (usedOrders.includes(order)) {
                 setError(
                     `Order ${order} is already used by another project in stage ${stage}`
@@ -256,45 +376,52 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
             }
         }
 
+        if (!Object.values(PROJECT_STATES).includes(formData.state)) {
+            setError("Please select a valid project state");
+            return false;
+        }
+
         for (let i = 0; i < formData.topics.length; i++) {
-            if (formData.topics[i].length > 50) {
-                setError(
-                    `Topic "${formData.topics[i]}" is too long (max 50 characters)`
-                );
+            const topic = formData.topics[i];
+            if (!topic || typeof topic !== "string") continue;
+            if (topic.length > 50) {
+                setError(`Topic "${topic}" is too long (max 50 characters)`);
                 return false;
             }
         }
 
         for (let i = 0; i < projectResources.length; i++) {
             const resource = projectResources[i];
-            if (resource.name.trim() && !resource.link.trim()) {
+            if (!resource) continue;
+
+            const hasName = resource.name && resource.name.trim();
+            const hasLink = resource.link && resource.link.trim();
+
+            if (hasName && !hasLink) {
                 setError(
                     `Resource ${i + 1}: URL is required when name is provided`
                 );
                 return false;
             }
-            if (resource.link.trim() && !resource.name.trim()) {
+            if (hasLink && !hasName) {
                 setError(
                     `Resource ${i + 1}: Name is required when URL is provided`
                 );
                 return false;
             }
-            if (resource.name.trim() && !isValidUrl(resource.link)) {
+            if (hasName && hasLink && !isValidUrl(resource.link)) {
                 setError(`Resource ${i + 1}: Invalid URL`);
+                return false;
+            }
+            if (hasName && resource.name.trim().length > 100) {
+                setError(
+                    `Resource ${i + 1}: Name must be 100 characters or less`
+                );
                 return false;
             }
         }
 
         return true;
-    };
-
-    const isValidUrl = (string) => {
-        try {
-            new URL(string);
-            return true;
-        } catch (_) {
-            return false;
-        }
     };
 
     const handleSubmit = async (e) => {
@@ -308,28 +435,57 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         setError("");
 
         try {
-            const validResources = projectResources.filter(
-                (resource) => resource.name.trim() && resource.link.trim()
-            );
+            const validResources = projectResources
+                .filter(
+                    (resource) =>
+                        resource &&
+                        resource.name &&
+                        resource.name.trim() &&
+                        resource.link &&
+                        resource.link.trim()
+                )
+                .map((resource) => ({
+                    name: resource.name.trim(),
+                    type: resource.type || "documentation",
+                    link: resource.link.trim(),
+                }));
 
             const submitData = {
-                ...formData,
+                name: formData.name.trim(),
+                description: formData.description.trim(),
+                identifier: formData.identifier.trim() || undefined,
+                topics: Array.isArray(formData.topics)
+                    ? formData.topics.filter((t) => t && t.trim())
+                    : [],
+                githubRepo: formData.githubRepo.trim() || undefined,
+                state: formData.state,
                 stage: parseInt(formData.stage),
                 order: formData.order ? parseInt(formData.order) : undefined,
                 projectResources: validResources,
-                githubRepo: formData.githubRepo.trim() || undefined,
             };
 
             let result;
             if (isEditing) {
+                if (!project || !project._id) {
+                    throw new Error("Project ID is required for editing");
+                }
                 result = await projectAPI.update(project._id, submitData);
             } else {
+                if (!curriculumId) {
+                    throw new Error("Curriculum ID is required");
+                }
                 result = await projectAPI.create(curriculumId, submitData);
+            }
+
+            if (!result || !result.project) {
+                throw new Error("Invalid response from server");
             }
 
             onSuccess(result.project);
         } catch (error) {
-            setError(error.message);
+            setError(
+                error.message || "An error occurred while saving the project"
+            );
         } finally {
             setLoading(false);
         }
@@ -337,19 +493,27 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
 
     const getCurrentStageUsedOrders = () => {
         if (!formData.stage) return [];
-        return getUsedOrders(allProjects, formData.stage, project?._id);
+        return getUsedOrders(
+            allProjects,
+            formData.stage,
+            project && project._id
+        );
     };
 
     const getStageInfo = () => {
         if (!formData.stage) return null;
 
         const stage = parseInt(formData.stage);
-        const projectsInStage = allProjects.filter((p) => p.stage === stage);
+        if (isNaN(stage)) return null;
+
+        const projectsInStage = allProjects.filter(
+            (p) => p && p.stage === stage
+        );
         const usedOrders = getCurrentStageUsedOrders();
         const availableOrder = getNextAvailableOrder(
             allProjects,
             stage,
-            project?._id
+            project && project._id
         );
         const stageDefinition = getStageDefinition(stage);
 
@@ -458,7 +622,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                             usedStages.length > 0 ? usedStages.join(", ") : "1"
                         }
                     />
-                    {stageInfo?.stageDefinition && (
+                    {stageInfo && stageInfo.stageDefinition && (
                         <p
                             className="text-muted text-xs"
                             style={{ marginTop: "0.25rem" }}
@@ -506,11 +670,15 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                         maxLength={100}
                         disabled={loading}
                         placeholder={
-                            stageInfo?.stageDefinition?.defaultGithubRepo ||
+                            (stageInfo &&
+                                stageInfo.stageDefinition &&
+                                stageInfo.stageDefinition.defaultGithubRepo) ||
                             "repo-name"
                         }
                     />
-                    {stageInfo?.stageDefinition?.defaultGithubRepo &&
+                    {stageInfo &&
+                        stageInfo.stageDefinition &&
+                        stageInfo.stageDefinition.defaultGithubRepo &&
                         !formData.githubRepo && (
                             <p
                                 className="text-success text-xs"
@@ -594,7 +762,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                             <div key={index} className="resource-grid">
                                 <input
                                     type="text"
-                                    value={resource.name}
+                                    value={resource.name || ""}
                                     onChange={(e) =>
                                         handleResourceChange(
                                             index,
@@ -609,7 +777,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                                 />
 
                                 <select
-                                    value={resource.type}
+                                    value={resource.type || "documentation"}
                                     onChange={(e) =>
                                         handleResourceChange(
                                             index,
@@ -630,7 +798,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
 
                                 <input
                                     type="url"
-                                    value={resource.link}
+                                    value={resource.link || ""}
                                     onChange={(e) =>
                                         handleResourceChange(
                                             index,
