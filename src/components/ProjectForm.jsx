@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { projectAPI } from "../utils/api";
+import { projectAPI, curriculumAPI } from "../utils/api";
 import {
     PROJECT_STATES,
     PROJECT_STATE_LABELS,
@@ -45,21 +45,22 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     );
 
     const [allProjects, setAllProjects] = useState([]);
+    const [curriculumData, setCurriculumData] = useState(null);
     const [projectsLoaded, setProjectsLoaded] = useState(false);
     const [defaultsSet, setDefaultsSet] = useState(isEditing);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
-        fetchAllProjects();
+        fetchProjectsAndCurriculum();
     }, []);
 
     useEffect(() => {
-        if (!defaultsSet && projectsLoaded) {
+        if (!defaultsSet && projectsLoaded && curriculumData) {
             setInitialDefaults();
             setDefaultsSet(true);
         }
-    }, [allProjects, defaultsSet, isEditing, projectsLoaded]);
+    }, [allProjects, curriculumData, isEditing, defaultsSet, projectsLoaded]);
 
     useEffect(() => {
         if (formData.stage && !isEditing && defaultsSet && projectsLoaded) {
@@ -74,14 +75,21 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         }
     }, [formData.stage, allProjects, isEditing, defaultsSet, projectsLoaded]);
 
-    const fetchAllProjects = async () => {
+    const fetchProjectsAndCurriculum = async () => {
         try {
-            const data = await projectAPI.getAll();
+            const [projectsData, curriculumDetails] = await Promise.all([
+                projectAPI.getAll(),
+                curriculumAPI.getById(curriculumId),
+            ]);
+
             setAllProjects(
-                data.projects.filter((p) => p.curriculum._id === curriculumId)
+                projectsData.projects.filter(
+                    (p) => p.curriculum._id === curriculumId
+                )
             );
+            setCurriculumData(curriculumDetails.curriculum);
         } catch (error) {
-            console.error("Failed to fetch projects:", error);
+            console.error("Failed to fetch projects and curriculum:", error);
         } finally {
             setProjectsLoaded(true);
         }
@@ -103,6 +111,35 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
             stage: defaultStage.toString(),
             order: defaultOrder.toString(),
         }));
+    };
+
+    const getStageDefinition = (stageNumber) => {
+        if (!curriculumData?.stages || !stageNumber) return null;
+        return curriculumData.stages.find(
+            (s) => s.stageNumber === parseInt(stageNumber)
+        );
+    };
+
+    const getInheritedGithubRepo = () => {
+        if (formData.githubRepo.trim()) {
+            return formData.githubRepo;
+        }
+
+        const stageDefinition = getStageDefinition(formData.stage);
+        return stageDefinition?.defaultGithubRepo || "";
+    };
+
+    const getLevelForStage = (stageNumber) => {
+        if (!curriculumData?.levels || !stageNumber) return null;
+        const stage = parseInt(stageNumber);
+        return curriculumData.levels.find(
+            (level) => stage >= level.stageStart && stage <= level.stageEnd
+        );
+    };
+
+    const getDefaultIdentifierPrefix = () => {
+        const level = getLevelForStage(formData.stage);
+        return level?.defaultIdentifier || "";
     };
 
     const handleChange = (e) => {
@@ -280,6 +317,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                 stage: parseInt(formData.stage),
                 order: formData.order ? parseInt(formData.order) : undefined,
                 projectResources: validResources,
+                githubRepo: formData.githubRepo.trim() || undefined,
             };
 
             let result;
@@ -313,16 +351,20 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
             stage,
             project?._id
         );
+        const stageDefinition = getStageDefinition(stage);
 
         return {
             projectCount: projectsInStage.length,
             usedOrders,
             availableOrder,
+            stageDefinition,
         };
     };
 
     const usedStages = getUniqueStages(allProjects);
     const stageInfo = getStageInfo();
+    const inheritedRepo = getInheritedGithubRepo();
+    const defaultIdentifierPrefix = getDefaultIdentifierPrefix();
 
     return (
         <form onSubmit={handleSubmit} className="form-compact">
@@ -360,8 +402,23 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                         className="form-input"
                         maxLength={20}
                         disabled={loading}
-                        placeholder="e.g., R1, L2P3"
+                        placeholder={
+                            defaultIdentifierPrefix
+                                ? `e.g., ${defaultIdentifierPrefix}1, ${defaultIdentifierPrefix}${
+                                      formData.order || "1"
+                                  }`
+                                : "e.g., R1, L2P3"
+                        }
                     />
+                    {defaultIdentifierPrefix && (
+                        <p
+                            className="text-muted text-xs"
+                            style={{ marginTop: "0.25rem" }}
+                        >
+                            Suggested prefix: {defaultIdentifierPrefix} (from
+                            level)
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -401,6 +458,17 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                             usedStages.length > 0 ? usedStages.join(", ") : "1"
                         }
                     />
+                    {stageInfo?.stageDefinition && (
+                        <p
+                            className="text-muted text-xs"
+                            style={{ marginTop: "0.25rem" }}
+                        >
+                            {stageInfo.stageDefinition.name &&
+                                `${stageInfo.stageDefinition.name}: `}
+                            {stageInfo.stageDefinition.description ||
+                                "Stage definition found"}
+                        </p>
+                    )}
                 </div>
 
                 <div className="form-group">
@@ -437,8 +505,30 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                         className="form-input"
                         maxLength={100}
                         disabled={loading}
-                        placeholder="repo-name"
+                        placeholder={
+                            stageInfo?.stageDefinition?.defaultGithubRepo ||
+                            "repo-name"
+                        }
                     />
+                    {stageInfo?.stageDefinition?.defaultGithubRepo &&
+                        !formData.githubRepo && (
+                            <p
+                                className="text-success text-xs"
+                                style={{ marginTop: "0.25rem" }}
+                            >
+                                Will inherit:{" "}
+                                {stageInfo.stageDefinition.defaultGithubRepo}{" "}
+                                (from stage {formData.stage})
+                            </p>
+                        )}
+                    {inheritedRepo && formData.githubRepo && (
+                        <p
+                            className="text-muted text-xs"
+                            style={{ marginTop: "0.25rem" }}
+                        >
+                            Using custom repository name
+                        </p>
+                    )}
                 </div>
 
                 <div className="form-group">

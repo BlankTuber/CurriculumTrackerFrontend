@@ -10,10 +10,16 @@ import {
 const PrerequisiteSummary = ({
     prerequisites = [],
     levels = [],
+    stages = [],
     showDetails = true,
     maxVisible = 3,
     onManageClick = null,
 }) => {
+    const getStageDefinition = (stageNumber) => {
+        if (!stages || !Array.isArray(stages)) return null;
+        return stages.find((s) => s.stageNumber === stageNumber);
+    };
+
     if (prerequisites.length === 0) {
         return (
             <div className="flex-between" style={{ alignItems: "center" }}>
@@ -80,6 +86,9 @@ const PrerequisiteSummary = ({
                             levels,
                             prerequisite.stage
                         );
+                        const stageDefinition = getStageDefinition(
+                            prerequisite.stage
+                        );
                         return (
                             <div
                                 key={prerequisite._id}
@@ -129,12 +138,22 @@ const PrerequisiteSummary = ({
                                         >
                                             Stage {prerequisite.stage}
                                         </span>
+                                        {stageDefinition?.name && (
+                                            <span
+                                                className="text-info"
+                                                style={{ fontSize: "0.8rem" }}
+                                            >
+                                                {stageDefinition.name}
+                                            </span>
+                                        )}
                                         {level && (
                                             <span
                                                 className="text-primary"
                                                 style={{ fontSize: "0.8rem" }}
                                             >
                                                 {level.name}
+                                                {level.defaultIdentifier &&
+                                                    ` (${level.defaultIdentifier})`}
                                             </span>
                                         )}
                                     </div>

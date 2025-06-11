@@ -4,6 +4,7 @@ import { sortLevelsByOrder } from "../utils/stageUtils";
 const ProjectHierarchyBrowser = ({
     levels = [],
     projects = [],
+    stages = [],
     selectedLevel,
     selectedStage,
     onLevelChange,
@@ -14,11 +15,16 @@ const ProjectHierarchyBrowser = ({
 
     const getStagesForLevel = (level) => {
         if (!level) return [];
-        const stages = [];
+        const stageNumbers = [];
         for (let i = level.stageStart; i <= level.stageEnd; i++) {
-            stages.push(i);
+            stageNumbers.push(i);
         }
-        return stages;
+        return stageNumbers;
+    };
+
+    const getStageDefinition = (stageNumber) => {
+        if (!stages || !Array.isArray(stages)) return null;
+        return stages.find((s) => s.stageNumber === stageNumber);
     };
 
     const getProjectsForStage = (stage) => {
@@ -121,15 +127,40 @@ const ProjectHierarchyBrowser = ({
                                         }}
                                     >
                                         <div style={{ marginBottom: "0.5rem" }}>
-                                            <h4
+                                            <div
+                                                className="flex"
                                                 style={{
-                                                    margin: 0,
-                                                    fontSize: "1rem",
-                                                    fontWeight: "600",
+                                                    gap: "0.5rem",
+                                                    alignItems: "center",
+                                                    marginBottom: "0.25rem",
+                                                    flexWrap: "wrap",
                                                 }}
                                             >
-                                                {level.name}
-                                            </h4>
+                                                <h4
+                                                    style={{
+                                                        margin: 0,
+                                                        fontSize: "1rem",
+                                                        fontWeight: "600",
+                                                    }}
+                                                >
+                                                    {level.name}
+                                                </h4>
+                                                {level.defaultIdentifier && (
+                                                    <span
+                                                        className="text-primary"
+                                                        style={{
+                                                            fontSize: "0.8rem",
+                                                            fontWeight: "600",
+                                                        }}
+                                                    >
+                                                        [
+                                                        {
+                                                            level.defaultIdentifier
+                                                        }
+                                                        ]
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p
                                                 className="text-muted text-sm"
                                                 style={{
@@ -193,14 +224,35 @@ const ProjectHierarchyBrowser = ({
             {selectedLevel && !selectedStage && (
                 <div>
                     <div style={{ marginBottom: "0.75rem" }}>
-                        <h4
+                        <div
+                            className="flex"
                             style={{
-                                fontSize: "0.9rem",
-                                margin: "0 0 0.25rem 0",
+                                gap: "0.5rem",
+                                alignItems: "center",
+                                marginBottom: "0.25rem",
+                                flexWrap: "wrap",
                             }}
                         >
-                            {selectedLevel.name}
-                        </h4>
+                            <h4
+                                style={{
+                                    fontSize: "0.9rem",
+                                    margin: "0",
+                                }}
+                            >
+                                {selectedLevel.name}
+                            </h4>
+                            {selectedLevel.defaultIdentifier && (
+                                <span
+                                    className="text-primary"
+                                    style={{
+                                        fontSize: "0.8rem",
+                                        fontWeight: "600",
+                                    }}
+                                >
+                                    [{selectedLevel.defaultIdentifier}]
+                                </span>
+                            )}
+                        </div>
                         <p className="text-muted text-sm" style={{ margin: 0 }}>
                             Choose a stage to view projects
                         </p>
@@ -212,6 +264,7 @@ const ProjectHierarchyBrowser = ({
                             const completedProjects = stageProjects.filter(
                                 (p) => p.state === "completed"
                             );
+                            const stageDefinition = getStageDefinition(stage);
 
                             return (
                                 <div
@@ -231,10 +284,22 @@ const ProjectHierarchyBrowser = ({
                                                 margin: 0,
                                                 fontSize: "0.9rem",
                                                 fontWeight: "600",
+                                                marginBottom: "0.25rem",
                                             }}
                                         >
                                             Stage {stage}
                                         </h5>
+                                        {stageDefinition?.name && (
+                                            <p
+                                                className="text-primary text-xs"
+                                                style={{
+                                                    margin: 0,
+                                                    fontWeight: "500",
+                                                }}
+                                            >
+                                                {stageDefinition.name}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div style={{ marginBottom: "0.25rem" }}>
@@ -262,6 +327,35 @@ const ProjectHierarchyBrowser = ({
                                             </span>
                                         </div>
                                     )}
+
+                                    {stageDefinition?.description && (
+                                        <p
+                                            className="text-muted text-xs"
+                                            style={{
+                                                margin: "0.25rem 0 0 0",
+                                                lineHeight: "1.2",
+                                                display: "-webkit-box",
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: "vertical",
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            {stageDefinition.description}
+                                        </p>
+                                    )}
+
+                                    {stageDefinition?.defaultGithubRepo && (
+                                        <p
+                                            className="text-info text-xs"
+                                            style={{
+                                                margin: "0.25rem 0 0 0",
+                                                fontFamily: "monospace",
+                                                fontSize: "0.65rem",
+                                            }}
+                                        >
+                                            {stageDefinition.defaultGithubRepo}
+                                        </p>
+                                    )}
                                 </div>
                             );
                         })}
@@ -275,6 +369,55 @@ const ProjectHierarchyBrowser = ({
                         Projects for {selectedLevel.name}, Stage {selectedStage}{" "}
                         will appear below.
                     </p>
+                    {(() => {
+                        const stageDefinition =
+                            getStageDefinition(selectedStage);
+                        if (stageDefinition) {
+                            return (
+                                <div
+                                    style={{
+                                        marginTop: "0.5rem",
+                                        padding: "0.5rem",
+                                        background: "var(--bg-tertiary)",
+                                        borderRadius: "4px",
+                                    }}
+                                >
+                                    {stageDefinition.name && (
+                                        <p
+                                            className="text-primary text-sm"
+                                            style={{
+                                                margin: "0 0 0.25rem 0",
+                                                fontWeight: "600",
+                                            }}
+                                        >
+                                            {stageDefinition.name}
+                                        </p>
+                                    )}
+                                    {stageDefinition.description && (
+                                        <p
+                                            className="text-muted text-xs"
+                                            style={{ margin: "0 0 0.25rem 0" }}
+                                        >
+                                            {stageDefinition.description}
+                                        </p>
+                                    )}
+                                    {stageDefinition.defaultGithubRepo && (
+                                        <p
+                                            className="text-info text-xs"
+                                            style={{
+                                                margin: 0,
+                                                fontFamily: "monospace",
+                                            }}
+                                        >
+                                            Default repo:{" "}
+                                            {stageDefinition.defaultGithubRepo}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
                 </div>
             )}
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { curriculumAPI, projectAPI, levelAPI } from "../utils/api";
+import { curriculumAPI, projectAPI, levelAPI, stageAPI } from "../utils/api";
 import {
     getLevelForStage,
     sortProjectsByStageAndOrder,
@@ -22,6 +22,7 @@ import CurriculumForm from "../components/CurriculumForm";
 import ProjectForm from "../components/ProjectForm";
 import ResourceForm from "../components/ResourceForm";
 import LevelForm from "../components/LevelForm";
+import StageForm from "../components/StageForm";
 import ProjectFilter from "../components/ProjectFilter";
 import ProjectHierarchyBrowser from "../components/ProjectHierarchyBrowser";
 import Notification from "../components/Notification";
@@ -39,16 +40,21 @@ const CurriculumDetail = () => {
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [showResourceModal, setShowResourceModal] = useState(false);
     const [showLevelModal, setShowLevelModal] = useState(false);
+    const [showStageModal, setShowStageModal] = useState(false);
     const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
     const [showDeleteResourceModal, setShowDeleteResourceModal] =
         useState(false);
     const [showDeleteLevelModal, setShowDeleteLevelModal] = useState(false);
+    const [showDeleteStageModal, setShowDeleteStageModal] = useState(false);
     const [showEditLevelModal, setShowEditLevelModal] = useState(false);
+    const [showEditStageModal, setShowEditStageModal] = useState(false);
 
     const [projectToDelete, setProjectToDelete] = useState(null);
     const [resourceToDelete, setResourceToDelete] = useState(null);
     const [levelToDelete, setLevelToDelete] = useState(null);
+    const [stageToDelete, setStageToDelete] = useState(null);
     const [levelToEdit, setLevelToEdit] = useState(null);
+    const [stageToEdit, setStageToEdit] = useState(null);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [stageFilter, setStageFilter] = useState("");
@@ -143,6 +149,15 @@ const CurriculumDetail = () => {
         showNotification("success", "Success", "Level created successfully!");
     };
 
+    const handleStageSuccess = (newStage) => {
+        setCurriculum((prev) => ({
+            ...prev,
+            stages: [...(prev.stages || []), newStage],
+        }));
+        setShowStageModal(false);
+        showNotification("success", "Success", "Stage created successfully!");
+    };
+
     const handleEditLevelSuccess = (updatedLevel) => {
         setCurriculum((prev) => ({
             ...prev,
@@ -153,6 +168,18 @@ const CurriculumDetail = () => {
         setShowEditLevelModal(false);
         setLevelToEdit(null);
         showNotification("success", "Success", "Level updated successfully!");
+    };
+
+    const handleEditStageSuccess = (updatedStage) => {
+        setCurriculum((prev) => ({
+            ...prev,
+            stages: prev.stages.map((stage) =>
+                stage._id === updatedStage._id ? updatedStage : stage
+            ),
+        }));
+        setShowEditStageModal(false);
+        setStageToEdit(null);
+        showNotification("success", "Success", "Stage updated successfully!");
     };
 
     const handleUpdateProjectState = async (project, newState) => {
@@ -300,9 +327,49 @@ const CurriculumDetail = () => {
         setLevelToDelete(null);
     };
 
+    const handleDeleteStageClick = (stage) => {
+        setStageToDelete(stage);
+        setShowDeleteStageModal(true);
+    };
+
+    const handleDeleteStageConfirm = async () => {
+        if (!stageToDelete) return;
+
+        try {
+            await stageAPI.delete(stageToDelete._id);
+            setCurriculum((prev) => ({
+                ...prev,
+                stages: prev.stages.filter((s) => s._id !== stageToDelete._id),
+            }));
+            setShowDeleteStageModal(false);
+            setStageToDelete(null);
+            showNotification(
+                "success",
+                "Success",
+                "Stage deleted successfully!"
+            );
+        } catch (error) {
+            showNotification(
+                "error",
+                "Error",
+                `Failed to delete stage: ${error.message}`
+            );
+        }
+    };
+
+    const handleDeleteStageCancel = () => {
+        setShowDeleteStageModal(false);
+        setStageToDelete(null);
+    };
+
     const handleEditLevelClick = (level) => {
         setLevelToEdit(level);
         setShowEditLevelModal(true);
+    };
+
+    const handleEditStageClick = (stage) => {
+        setStageToEdit(stage);
+        setShowEditStageModal(true);
     };
 
     const handleHierarchyLevelChange = (level) => {
@@ -590,6 +657,8 @@ const CurriculumDetail = () => {
     };
 
     const sortedLevels = sortLevelsByOrder(curriculum?.levels || []);
+    const sortedStages =
+        curriculum?.stages?.sort((a, b) => a.stageNumber - b.stageNumber) || [];
     const sortedProjects = getFilteredProjects();
     const hasActiveFilters = isUsingFilters();
     const hasHierarchySelection = selectedLevel && selectedStage;
@@ -696,6 +765,57 @@ const CurriculumDetail = () => {
                     showStateFilter={true}
                 />
 
+                {!hasActiveFilters && (
+                    <ProjectHierarchyBrowser
+                        levels={curriculum.levels || []}
+                        projects={curriculum.projects || []}
+                        stages={curriculum.stages || []}
+                        selectedLevel={selectedLevel}
+                        selectedStage={selectedStage}
+                        onLevelChange={handleHierarchyLevelChange}
+                        onStageChange={handleHierarchyStageChange}
+                        onAddProject={() => setShowProjectModal(true)}
+                    />
+                )}
+
+                {hasActiveFilters && (
+                    <div className="card">
+                        <div className="card-header">
+                            <div className="flex-between">
+                                <h2 className="card-title">
+                                    Filtered Projects ({sortedProjects.length}
+                                    {curriculum.projects && (
+                                        <span className="text-muted">
+                                            /{curriculum.projects.length}
+                                        </span>
+                                    )}
+                                    )
+                                </h2>
+                                <button
+                                    onClick={() => setShowProjectModal(true)}
+                                    className="btn btn-primary btn-small"
+                                >
+                                    Add Project
+                                </button>
+                            </div>
+                        </div>
+
+                        {sortedProjects.length > 0 ? (
+                            <div className="scrollable-list">
+                                <div className="compact-list">
+                                    {sortedProjects.map(renderProjectCard)}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-muted text-center text-sm">
+                                No projects match the current filters
+                            </p>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className="grid grid-2">
                 <div className="card">
                     <div className="card-header">
                         <div className="flex-between">
@@ -726,6 +846,7 @@ const CurriculumDetail = () => {
                                                     gap: "0.5rem",
                                                     alignItems: "center",
                                                     marginBottom: "0.25rem",
+                                                    flexWrap: "wrap",
                                                 }}
                                             >
                                                 <strong
@@ -742,6 +863,14 @@ const CurriculumDetail = () => {
                                                 <span className="text-muted text-xs">
                                                     Order {level.order}
                                                 </span>
+                                                {level.defaultIdentifier && (
+                                                    <span className="text-primary text-xs">
+                                                        ID:{" "}
+                                                        {
+                                                            level.defaultIdentifier
+                                                        }
+                                                    </span>
+                                                )}
                                             </div>
                                             {level.description && (
                                                 <p
@@ -793,30 +922,28 @@ const CurriculumDetail = () => {
                         </p>
                     )}
                 </div>
-            </div>
 
-            <div className="grid grid-2">
                 <div className="card">
                     <div className="card-header">
                         <div className="flex-between">
                             <h2 className="card-title">
-                                Resources ({curriculum.resources?.length || 0})
+                                Stages ({sortedStages.length})
                             </h2>
                             <button
-                                onClick={() => setShowResourceModal(true)}
+                                onClick={() => setShowStageModal(true)}
                                 className="btn btn-primary btn-small"
                             >
-                                Add Resource
+                                Add Stage
                             </button>
                         </div>
                     </div>
 
-                    {curriculum.resources && curriculum.resources.length > 0 ? (
+                    {sortedStages.length > 0 ? (
                         <div className="scrollable-list">
                             <div className="compact-list">
-                                {curriculum.resources.map((resource) => (
+                                {sortedStages.map((stage) => (
                                     <div
-                                        key={resource._id}
+                                        key={stage._id}
                                         className="compact-item"
                                     >
                                         <div style={{ flex: 1 }}>
@@ -825,6 +952,8 @@ const CurriculumDetail = () => {
                                                 style={{
                                                     gap: "0.5rem",
                                                     alignItems: "center",
+                                                    marginBottom: "0.25rem",
+                                                    flexWrap: "wrap",
                                                 }}
                                             >
                                                 <strong
@@ -832,95 +961,145 @@ const CurriculumDetail = () => {
                                                         fontSize: "0.9rem",
                                                     }}
                                                 >
-                                                    {resource.name}
+                                                    Stage {stage.stageNumber}
+                                                    {stage.name &&
+                                                        `: ${stage.name}`}
                                                 </strong>
-                                                <span className="text-muted text-xs">
-                                                    {resource.type
-                                                        .charAt(0)
-                                                        .toUpperCase() +
-                                                        resource.type.slice(1)}
-                                                </span>
+                                                {stage.defaultGithubRepo && (
+                                                    <span className="text-primary text-xs">
+                                                        Repo:{" "}
+                                                        {
+                                                            stage.defaultGithubRepo
+                                                        }
+                                                    </span>
+                                                )}
                                             </div>
-                                            <a
-                                                href={resource.link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-primary text-xs"
-                                            >
-                                                {resource.link}
-                                            </a>
+                                            {stage.description && (
+                                                <p
+                                                    className="text-muted text-xs"
+                                                    style={{
+                                                        margin: 0,
+                                                        lineHeight: "1.3",
+                                                    }}
+                                                >
+                                                    {stage.description}
+                                                </p>
+                                            )}
                                         </div>
-                                        <button
-                                            onClick={() =>
-                                                handleDeleteResourceClick(
-                                                    resource
-                                                )
-                                            }
-                                            className="btn btn-danger btn-small"
-                                            style={{
-                                                padding: "0.25rem 0.5rem",
-                                                fontSize: "0.7rem",
-                                            }}
-                                        >
-                                            Delete
-                                        </button>
+                                        <div className="btn-group">
+                                            <button
+                                                onClick={() =>
+                                                    handleEditStageClick(stage)
+                                                }
+                                                className="btn btn-secondary btn-small"
+                                                style={{
+                                                    padding: "0.25rem 0.5rem",
+                                                    fontSize: "0.7rem",
+                                                }}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() =>
+                                                    handleDeleteStageClick(
+                                                        stage
+                                                    )
+                                                }
+                                                className="btn btn-danger btn-small"
+                                                style={{
+                                                    padding: "0.25rem 0.5rem",
+                                                    fontSize: "0.7rem",
+                                                }}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     ) : (
                         <p className="text-muted text-center text-sm">
-                            No resources yet
+                            No stages yet
                         </p>
                     )}
                 </div>
+            </div>
 
-                {!hasActiveFilters && (
-                    <ProjectHierarchyBrowser
-                        levels={curriculum.levels || []}
-                        projects={curriculum.projects || []}
-                        selectedLevel={selectedLevel}
-                        selectedStage={selectedStage}
-                        onLevelChange={handleHierarchyLevelChange}
-                        onStageChange={handleHierarchyStageChange}
-                        onAddProject={() => setShowProjectModal(true)}
-                    />
-                )}
-
-                {hasActiveFilters && (
-                    <div className="card">
-                        <div className="card-header">
-                            <div className="flex-between">
-                                <h2 className="card-title">
-                                    Filtered Projects ({sortedProjects.length}
-                                    {curriculum.projects && (
-                                        <span className="text-muted">
-                                            /{curriculum.projects.length}
-                                        </span>
-                                    )}
-                                    )
-                                </h2>
-                                <button
-                                    onClick={() => setShowProjectModal(true)}
-                                    className="btn btn-primary btn-small"
-                                >
-                                    Add Project
-                                </button>
-                            </div>
-                        </div>
-
-                        {sortedProjects.length > 0 ? (
-                            <div className="scrollable-list">
-                                <div className="compact-list">
-                                    {sortedProjects.map(renderProjectCard)}
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="text-muted text-center text-sm">
-                                No projects match the current filters
-                            </p>
-                        )}
+            <div className="card">
+                <div className="card-header">
+                    <div className="flex-between">
+                        <h2 className="card-title">
+                            Resources ({curriculum.resources?.length || 0})
+                        </h2>
+                        <button
+                            onClick={() => setShowResourceModal(true)}
+                            className="btn btn-primary btn-small"
+                        >
+                            Add Resource
+                        </button>
                     </div>
+                </div>
+
+                {curriculum.resources && curriculum.resources.length > 0 ? (
+                    <div className="scrollable-list">
+                        <div className="compact-list">
+                            {curriculum.resources.map((resource) => (
+                                <div
+                                    key={resource._id}
+                                    className="compact-item"
+                                >
+                                    <div style={{ flex: 1 }}>
+                                        <div
+                                            className="flex"
+                                            style={{
+                                                gap: "0.5rem",
+                                                alignItems: "center",
+                                            }}
+                                        >
+                                            <strong
+                                                style={{
+                                                    fontSize: "0.9rem",
+                                                }}
+                                            >
+                                                {resource.name}
+                                            </strong>
+                                            <span className="text-muted text-xs">
+                                                {resource.type
+                                                    .charAt(0)
+                                                    .toUpperCase() +
+                                                    resource.type.slice(1)}
+                                            </span>
+                                        </div>
+                                        <a
+                                            href={resource.link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary text-xs"
+                                        >
+                                            {resource.link}
+                                        </a>
+                                    </div>
+                                    <button
+                                        onClick={() =>
+                                            handleDeleteResourceClick(resource)
+                                        }
+                                        className="btn btn-danger btn-small"
+                                        style={{
+                                            padding: "0.25rem 0.5rem",
+                                            fontSize: "0.7rem",
+                                        }}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-muted text-center text-sm">
+                        No resources yet
+                    </p>
                 )}
             </div>
 
@@ -1005,6 +1184,18 @@ const CurriculumDetail = () => {
             </Modal>
 
             <Modal
+                isOpen={showStageModal}
+                onClose={() => setShowStageModal(false)}
+                title="Create New Stage"
+            >
+                <StageForm
+                    curriculumId={curriculum._id}
+                    onSuccess={handleStageSuccess}
+                    onCancel={() => setShowStageModal(false)}
+                />
+            </Modal>
+
+            <Modal
                 isOpen={showEditLevelModal}
                 onClose={() => setShowEditLevelModal(false)}
                 title="Edit Level"
@@ -1014,6 +1205,19 @@ const CurriculumDetail = () => {
                     curriculumId={curriculum._id}
                     onSuccess={handleEditLevelSuccess}
                     onCancel={() => setShowEditLevelModal(false)}
+                />
+            </Modal>
+
+            <Modal
+                isOpen={showEditStageModal}
+                onClose={() => setShowEditStageModal(false)}
+                title="Edit Stage"
+            >
+                <StageForm
+                    stage={stageToEdit}
+                    curriculumId={curriculum._id}
+                    onSuccess={handleEditStageSuccess}
+                    onCancel={() => setShowEditStageModal(false)}
                 />
             </Modal>
 
@@ -1104,6 +1308,38 @@ const CurriculumDetail = () => {
                     </button>
                     <button
                         onClick={handleDeleteLevelCancel}
+                        className="btn btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={showDeleteStageModal}
+                onClose={handleDeleteStageCancel}
+                title="Delete Stage"
+            >
+                <div className="mb-1">
+                    <p className="text-error mb-1">
+                        ⚠️ Are you sure you want to delete "Stage{" "}
+                        {stageToDelete?.stageNumber}
+                        {stageToDelete?.name && `: ${stageToDelete.name}`}"?
+                    </p>
+                    <p className="text-muted text-sm">
+                        This action cannot be undone.
+                    </p>
+                </div>
+
+                <div className="btn-group">
+                    <button
+                        onClick={handleDeleteStageConfirm}
+                        className="btn btn-danger"
+                    >
+                        Delete Stage
+                    </button>
+                    <button
+                        onClick={handleDeleteStageCancel}
                         className="btn btn-secondary"
                     >
                         Cancel

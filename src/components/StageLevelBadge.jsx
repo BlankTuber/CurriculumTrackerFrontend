@@ -6,12 +6,16 @@ const StageLevelBadge = ({
     order = null,
     identifier = null,
     levels = [],
+    stages = [],
     showLevel = true,
+    showStage = true,
     showIdentifier = true,
     size = "normal",
     className = "",
 }) => {
     const level = showLevel ? getLevelForStage(levels, stage) : null;
+    const stageDefinition =
+        stages?.find((s) => s.stageNumber === stage) || null;
 
     const sizeClasses = {
         small: "text-xs",
@@ -34,12 +38,42 @@ const StageLevelBadge = ({
                     [{identifier}]
                 </span>
             )}
-            <span className={`text-muted ${textSize}`}>
-                Stage {stage}
-                {order && ` #${order}`}
-            </span>
+            {showStage && (
+                <div
+                    className="flex"
+                    style={{ gap: "0.25rem", alignItems: "center" }}
+                >
+                    <span className={`text-muted ${textSize}`}>
+                        Stage {stage}
+                        {order && ` #${order}`}
+                    </span>
+                    {stageDefinition?.name && (
+                        <span
+                            className={`text-info ${textSize}`}
+                            style={{ fontWeight: "500" }}
+                        >
+                            ({stageDefinition.name})
+                        </span>
+                    )}
+                </div>
+            )}
             {level && (
-                <span className={`text-primary ${textSize}`}>{level.name}</span>
+                <div
+                    className="flex"
+                    style={{ gap: "0.25rem", alignItems: "center" }}
+                >
+                    <span className={`text-primary ${textSize}`}>
+                        {level.name}
+                    </span>
+                    {level.defaultIdentifier && (
+                        <span
+                            className={`text-primary ${textSize}`}
+                            style={{ fontWeight: "600" }}
+                        >
+                            [{level.defaultIdentifier}]
+                        </span>
+                    )}
+                </div>
             )}
         </div>
     );

@@ -15,11 +15,17 @@ const PrerequisiteSelector = ({
     selectedPrerequisites = [],
     onSelectionChange,
     levels = [],
+    stages = [],
     disabled = false,
 }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [stageFilter, setStageFilter] = useState("");
     const [stateFilter, setStateFilter] = useState("");
+
+    const getStageDefinition = (stageNumber) => {
+        if (!stages || !Array.isArray(stages)) return null;
+        return stages.find((s) => s.stageNumber === stageNumber);
+    };
 
     const filteredAndSortedProjects = useMemo(() => {
         let filtered = [...availableProjects];
@@ -115,11 +121,16 @@ const PrerequisiteSelector = ({
                         disabled={disabled}
                     >
                         <option value="">All Stages</option>
-                        {uniqueStages.map((stage) => (
-                            <option key={stage} value={stage}>
-                                Stage {stage}
-                            </option>
-                        ))}
+                        {uniqueStages.map((stage) => {
+                            const stageDefinition = getStageDefinition(stage);
+                            return (
+                                <option key={stage} value={stage}>
+                                    Stage {stage}
+                                    {stageDefinition?.name &&
+                                        ` - ${stageDefinition.name}`}
+                                </option>
+                            );
+                        })}
                     </select>
                 </div>
 
@@ -179,6 +190,9 @@ const PrerequisiteSelector = ({
                                 levels,
                                 parseInt(stage)
                             );
+                            const stageDefinition = getStageDefinition(
+                                parseInt(stage)
+                            );
                             return (
                                 <div
                                     key={stage}
@@ -190,6 +204,7 @@ const PrerequisiteSelector = ({
                                             gap: "0.5rem",
                                             alignItems: "center",
                                             marginBottom: "0.5rem",
+                                            flexWrap: "wrap",
                                         }}
                                     >
                                         <h4
@@ -200,9 +215,17 @@ const PrerequisiteSelector = ({
                                         >
                                             Stage {stage}
                                         </h4>
+                                        {stageDefinition?.name && (
+                                            <span className="text-info text-xs">
+                                                {stageDefinition.name}
+                                            </span>
+                                        )}
                                         {level && (
                                             <span className="text-primary text-xs">
-                                                ({level.name})
+                                                ({level.name}
+                                                {level.defaultIdentifier &&
+                                                    ` - ${level.defaultIdentifier}`}
+                                                )
                                             </span>
                                         )}
                                     </div>

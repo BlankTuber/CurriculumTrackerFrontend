@@ -300,6 +300,7 @@ const Dashboard = () => {
                                                     style={{
                                                         gap: "0.5rem",
                                                         alignItems: "center",
+                                                        flexWrap: "wrap",
                                                     }}
                                                 >
                                                     <span className="text-muted text-xs">
@@ -308,6 +309,26 @@ const Dashboard = () => {
                                                         {nextProject.order &&
                                                             ` #${nextProject.order}`}
                                                     </span>
+                                                    {(() => {
+                                                        const stageDefinition =
+                                                            curriculum.stages?.find(
+                                                                (s) =>
+                                                                    s.stageNumber ===
+                                                                    nextProject.stage
+                                                            );
+                                                        if (
+                                                            stageDefinition?.name
+                                                        ) {
+                                                            return (
+                                                                <span className="text-info text-xs">
+                                                                    {
+                                                                        stageDefinition.name
+                                                                    }
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
                                                     {(() => {
                                                         const level =
                                                             getLevelForStage(
@@ -318,6 +339,8 @@ const Dashboard = () => {
                                                         return level ? (
                                                             <span className="text-primary text-xs">
                                                                 {level.name}
+                                                                {level.defaultIdentifier &&
+                                                                    ` (${level.defaultIdentifier})`}
                                                             </span>
                                                         ) : null;
                                                     })()}

@@ -9,14 +9,18 @@ import { getLevelForStage } from "../utils/stageUtils";
 const ProjectLink = ({
     project,
     levels = [],
+    stages = [],
     showDescription = false,
     showDetails = true,
     showTopics = false,
+    showStageInfo = false,
     maxTopics = 3,
     className = "",
     style = {},
 }) => {
     const level = getLevelForStage(levels, project.stage);
+    const stageDefinition =
+        stages?.find((s) => s.stageNumber === project.stage) || null;
 
     return (
         <div className={className} style={style}>
@@ -59,12 +63,22 @@ const ProjectLink = ({
                             Stage {project.stage}
                             {project.order && ` #${project.order}`}
                         </span>
+                        {showStageInfo && stageDefinition?.name && (
+                            <span
+                                className="text-info"
+                                style={{ fontSize: "0.8rem" }}
+                            >
+                                {stageDefinition.name}
+                            </span>
+                        )}
                         {level && (
                             <span
                                 className="text-primary"
                                 style={{ fontSize: "0.8rem" }}
                             >
                                 {level.name}
+                                {level.defaultIdentifier &&
+                                    ` (${level.defaultIdentifier})`}
                             </span>
                         )}
                         <span
@@ -123,6 +137,35 @@ const ProjectLink = ({
                         >
                             +{project.topics.length - maxTopics} more
                         </span>
+                    )}
+                </div>
+            )}
+
+            {showStageInfo && stageDefinition && (
+                <div style={{ marginTop: "0.25rem" }}>
+                    {stageDefinition.description && (
+                        <p
+                            className="text-muted"
+                            style={{
+                                fontSize: "0.75rem",
+                                margin: "0 0 0.25rem 0",
+                                lineHeight: "1.3",
+                            }}
+                        >
+                            {stageDefinition.description}
+                        </p>
+                    )}
+                    {stageDefinition.defaultGithubRepo && (
+                        <p
+                            className="text-info"
+                            style={{
+                                fontSize: "0.75rem",
+                                margin: "0",
+                                fontFamily: "monospace",
+                            }}
+                        >
+                            Default repo: {stageDefinition.defaultGithubRepo}
+                        </p>
                     )}
                 </div>
             )}

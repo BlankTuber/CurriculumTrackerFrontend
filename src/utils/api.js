@@ -117,6 +117,27 @@ export const levelAPI = {
         }),
 };
 
+export const stageAPI = {
+    create: (curriculumId, stageData) =>
+        apiRequest(`/curricula/stage/${curriculumId}/createStage`, {
+            method: "POST",
+            body: JSON.stringify(stageData),
+        }),
+
+    getById: (stageId) => apiRequest(`/curricula/stage/${stageId}`),
+
+    update: (stageId, stageData) =>
+        apiRequest(`/curricula/stage/${stageId}/updateStage`, {
+            method: "PUT",
+            body: JSON.stringify(stageData),
+        }),
+
+    delete: (stageId) =>
+        apiRequest(`/curricula/stage/${stageId}/deleteStage`, {
+            method: "DELETE",
+        }),
+};
+
 export const projectAPI = {
     create: (curriculumId, projectData) =>
         apiRequest(`/projects/${curriculumId}/createProject`, {

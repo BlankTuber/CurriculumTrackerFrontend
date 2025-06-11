@@ -252,6 +252,27 @@ const ProjectDetail = () => {
         );
     };
 
+    const getStageDefinition = (stageNumber) => {
+        if (!originalCurriculum?.stages) return null;
+        return originalCurriculum.stages.find(
+            (s) => s.stageNumber === stageNumber
+        );
+    };
+
+    const getGithubRepoSource = () => {
+        if (!project) return { repo: null, source: null };
+
+        if (project.githubRepo) {
+            const stageDefinition = getStageDefinition(project.stage);
+            if (stageDefinition?.defaultGithubRepo === project.githubRepo) {
+                return { repo: project.githubRepo, source: "stage" };
+            }
+            return { repo: project.githubRepo, source: "project" };
+        }
+
+        return { repo: null, source: null };
+    };
+
     if (loading) {
         return <LoadingSpinner message="Loading project..." />;
     }
@@ -285,10 +306,9 @@ const ProjectDetail = () => {
     }
 
     const projectLevel = getLevelForStage(project.stage);
-    const githubUrl = constructGithubUrl(
-        user?.githubUsername,
-        project.githubRepo
-    );
+    const stageDefinition = getStageDefinition(project.stage);
+    const { repo: githubRepo, source: repoSource } = getGithubRepoSource();
+    const githubUrl = constructGithubUrl(user?.githubUsername, githubRepo);
 
     return (
         <div>
@@ -344,26 +364,45 @@ const ProjectDetail = () => {
                             gap: "0.75rem",
                             marginTop: "0.25rem",
                             flexWrap: "wrap",
+                            alignItems: "center",
                         }}
                     >
                         <span className="text-muted text-sm">
                             Stage {project.stage}
                             {project.order && ` #${project.order}`}
                         </span>
+                        {stageDefinition && (
+                            <span className="text-info text-sm">
+                                {stageDefinition.name ||
+                                    `Stage ${project.stage} defined`}
+                            </span>
+                        )}
                         {projectLevel && (
                             <span className="text-primary text-sm">
                                 Level: {projectLevel.name}
+                                {projectLevel.defaultIdentifier &&
+                                    ` (${projectLevel.defaultIdentifier})`}
                             </span>
                         )}
                         {githubUrl && (
-                            <a
-                                href={githubUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary text-sm"
+                            <div
+                                className="flex"
+                                style={{ gap: "0.25rem", alignItems: "center" }}
                             >
-                                View on GitHub →
-                            </a>
+                                <a
+                                    href={githubUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary text-sm"
+                                >
+                                    View on GitHub →
+                                </a>
+                                {repoSource === "stage" && (
+                                    <span className="text-muted text-xs">
+                                        (inherited from stage)
+                                    </span>
+                                )}
+                            </div>
                         )}
                     </div>
                     {project.topics && project.topics.length > 0 && (
@@ -418,6 +457,50 @@ const ProjectDetail = () => {
                     </button>
                 </div>
             </div>
+
+            {stageDefinition &&
+                (stageDefinition.description ||
+                    stageDefinition.defaultGithubRepo) && (
+                    <div
+                        className="card mb-1"
+                        style={{ background: "var(--bg-tertiary)" }}
+                    >
+                        <div className="card-header">
+                            <h3 className="card-title">
+                                Stage {project.stage} Information
+                                {stageDefinition.name &&
+                                    ` - ${stageDefinition.name}`}
+                            </h3>
+                        </div>
+                        {stageDefinition.description && (
+                            <p
+                                className="text-muted text-sm"
+                                style={{ marginBottom: "0.5rem" }}
+                            >
+                                {stageDefinition.description}
+                            </p>
+                        )}
+                        {stageDefinition.defaultGithubRepo && (
+                            <div
+                                className="flex"
+                                style={{ gap: "0.5rem", alignItems: "center" }}
+                            >
+                                <span className="text-muted text-sm">
+                                    Default Repository:
+                                </span>
+                                <span className="text-primary text-sm">
+                                    {stageDefinition.defaultGithubRepo}
+                                </span>
+                                {repoSource !== "stage" &&
+                                    project.githubRepo && (
+                                        <span className="text-muted text-xs">
+                                            (project uses custom repo)
+                                        </span>
+                                    )}
+                            </div>
+                        )}
+                    </div>
+                )}
 
             {project.prerequisites && project.prerequisites.length > 0 && (
                 <div className="card mb-1">

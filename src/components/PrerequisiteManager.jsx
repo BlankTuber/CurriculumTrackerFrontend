@@ -88,6 +88,7 @@ const PrerequisiteManager = ({ project, onSuccess, onCancel }) => {
                 selectedPrerequisites={selectedPrerequisites}
                 onSelectionChange={setSelectedPrerequisites}
                 levels={project.curriculum?.levels || []}
+                stages={project.curriculum?.stages || []}
                 disabled={saving}
             />
 

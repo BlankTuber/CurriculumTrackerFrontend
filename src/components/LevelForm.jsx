@@ -14,6 +14,7 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
     const [formData, setFormData] = useState({
         name: level?.name || "",
         description: level?.description || "",
+        defaultIdentifier: level?.defaultIdentifier || "",
         stageStart: level?.stageStart?.toString() || "",
         stageEnd: level?.stageEnd?.toString() || "",
         order: level?.order?.toString() || "",
@@ -212,6 +213,17 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
         return `e.g., Level ${order}, Advanced Topics`;
     };
 
+    const getDefaultIdentifierPlaceholder = () => {
+        const levelName = formData.name.trim();
+        if (levelName) {
+            const firstLetter = levelName.charAt(0).toUpperCase();
+            return `e.g., ${firstLetter}, ${firstLetter}${
+                parseInt(formData.order) || getDynamicSuggestedOrder()
+            }`;
+        }
+        return "e.g., R, L1, FOUND";
+    };
+
     const getExistingRangesInfo = () => {
         if (existingLevels.length === 0) return null;
 
@@ -224,6 +236,7 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
             name: l.name,
             range: `${l.stageStart}-${l.stageEnd}`,
             order: l.order,
+            defaultIdentifier: l.defaultIdentifier || "None",
         }));
     };
 
@@ -240,6 +253,21 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
 
         if (formData.description.length > 500) {
             setError("Description must be 500 characters or less");
+            return false;
+        }
+
+        if (formData.defaultIdentifier.length > 10) {
+            setError("Default identifier must be 10 characters or less");
+            return false;
+        }
+
+        if (
+            formData.defaultIdentifier &&
+            !/^[a-zA-Z0-9_-]+$/.test(formData.defaultIdentifier)
+        ) {
+            setError(
+                "Default identifier can only contain letters, numbers, underscores, and hyphens"
+            );
             return false;
         }
 
@@ -294,6 +322,8 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                 stageStart: parseInt(formData.stageStart),
                 stageEnd: parseInt(formData.stageEnd),
                 order: parseInt(formData.order),
+                defaultIdentifier:
+                    formData.defaultIdentifier.trim() || undefined,
             };
 
             let result;
@@ -340,6 +370,31 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                 </div>
 
                 <div className="form-group">
+                    <label className="form-label" htmlFor="defaultIdentifier">
+                        Default Identifier
+                    </label>
+                    <input
+                        type="text"
+                        id="defaultIdentifier"
+                        name="defaultIdentifier"
+                        value={formData.defaultIdentifier}
+                        onChange={handleChange}
+                        className="form-input"
+                        maxLength={10}
+                        disabled={loading}
+                        placeholder={getDefaultIdentifierPlaceholder()}
+                    />
+                    <p
+                        className="text-muted text-xs"
+                        style={{ marginTop: "0.25rem" }}
+                    >
+                        Optional prefix for project identifiers in this level
+                    </p>
+                </div>
+            </div>
+
+            <div className="grid grid-2">
+                <div className="form-group">
                     <label className="form-label" htmlFor="order">
                         Order *
                     </label>
@@ -376,24 +431,24 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                         )}
                     </div>
                 </div>
-            </div>
 
-            <div className="form-group">
-                <label className="form-label" htmlFor="description">
-                    Description
-                </label>
-                <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    className="form-textarea"
-                    maxLength={500}
-                    disabled={loading}
-                    placeholder={`Describe what students will learn in stages ${
-                        formData.stageStart || nextRange.stageStart
-                    }-${formData.stageEnd || nextRange.stageEnd}...`}
-                />
+                <div className="form-group">
+                    <label className="form-label" htmlFor="description">
+                        Description
+                    </label>
+                    <textarea
+                        id="description"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        className="form-textarea"
+                        maxLength={500}
+                        disabled={loading}
+                        placeholder={`Describe what students will learn in stages ${
+                            formData.stageStart || nextRange.stageStart
+                        }-${formData.stageEnd || nextRange.stageEnd}...`}
+                    />
+                </div>
             </div>
 
             <div className="grid grid-2">
@@ -490,13 +545,41 @@ const LevelForm = ({ level = null, curriculumId, onSuccess, onCancel }) => {
                     >
                         {existingRanges.map((range, index) => (
                             <div key={index} className="compact-item">
-                                <span>
-                                    <strong>{range.name}</strong> (Order{" "}
-                                    {range.order})
-                                </span>
-                                <span className="text-muted text-xs">
-                                    Stages {range.range}
-                                </span>
+                                <div style={{ flex: 1 }}>
+                                    <div
+                                        className="flex"
+                                        style={{
+                                            gap: "0.5rem",
+                                            alignItems: "center",
+                                            marginBottom: "0.25rem",
+                                            flexWrap: "wrap",
+                                        }}
+                                    >
+                                        <span>
+                                            <strong>{range.name}</strong> (Order{" "}
+                                            {range.order})
+                                        </span>
+                                        {range.defaultIdentifier !== "None" && (
+                                            <span className="text-primary text-xs">
+                                                ID: {range.defaultIdentifier}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div
+                                        className="flex"
+                                        style={{
+                                            gap: "1rem",
+                                            alignItems: "center",
+                                        }}
+                                    >
+                                        <span className="text-muted text-xs">
+                                            Stages {range.range}
+                                        </span>
+                                        <span className="text-muted text-xs">
+                                            ID: {range.defaultIdentifier}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>
