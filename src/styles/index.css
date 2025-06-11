@@ -34,7 +34,7 @@ body {
     color: var(--text-primary);
     line-height: 1.4;
     min-height: 100vh;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 #root {
@@ -62,7 +62,7 @@ a:active {
 }
 
 .container {
-    max-width: 1600px;
+    max-width: 90vw;
     margin: 0 auto;
     padding: 0 1rem;
 }
@@ -70,15 +70,15 @@ a:active {
 .card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 0.375rem;
     padding: 1rem;
     margin-bottom: 0.75rem;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.1);
+    transform: translateY(-0.0625rem);
+    box-shadow: 0 0.25rem 0.9375rem rgba(124, 58, 237, 0.1);
 }
 
 .card-header {
@@ -102,7 +102,7 @@ a:active {
 .btn {
     padding: 0.5rem 1rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 500;
@@ -110,7 +110,7 @@ a:active {
     display: inline-block;
     text-align: center;
     transition: all 0.2s ease;
-    min-width: 80px;
+    min-width: 5rem;
 }
 
 .btn:disabled {
@@ -127,8 +127,8 @@ a:active {
 .btn-primary:hover:not(:disabled) {
     background: var(--accent-secondary);
     color: white !important;
-    transform: translateY(-1px);
-    box-shadow: 0 0 15px rgba(255, 20, 147, 0.4);
+    transform: translateY(-0.0625rem);
+    box-shadow: 0 0 0.9375rem rgba(255, 20, 147, 0.4);
 }
 
 .btn-secondary {
@@ -141,8 +141,8 @@ a:active {
 .btn-secondary:hover:not(:disabled) {
     background: var(--accent-tertiary);
     color: #000 !important;
-    transform: translateY(-1px);
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+    transform: translateY(-0.0625rem);
+    box-shadow: 0 0 0.9375rem rgba(0, 255, 255, 0.3);
 }
 
 .btn-success {
@@ -154,8 +154,8 @@ a:active {
 .btn-success:hover:not(:disabled) {
     background: #32ff9a;
     color: #000 !important;
-    transform: translateY(-1px);
-    box-shadow: 0 0 15px rgba(0, 255, 127, 0.4);
+    transform: translateY(-0.0625rem);
+    box-shadow: 0 0 0.9375rem rgba(0, 255, 127, 0.4);
 }
 
 .btn-warning {
@@ -167,8 +167,8 @@ a:active {
 .btn-warning:hover:not(:disabled) {
     background: #ff6a1a;
     color: white !important;
-    transform: translateY(-1px);
-    box-shadow: 0 0 15px rgba(255, 69, 0, 0.4);
+    transform: translateY(-0.0625rem);
+    box-shadow: 0 0 0.9375rem rgba(255, 69, 0, 0.4);
 }
 
 .btn-danger {
@@ -180,8 +180,8 @@ a:active {
 .btn-danger:hover:not(:disabled) {
     background: #ff4569;
     color: white !important;
-    transform: translateY(-1px);
-    box-shadow: 0 0 15px rgba(255, 23, 68, 0.4);
+    transform: translateY(-0.0625rem);
+    box-shadow: 0 0 0.9375rem rgba(255, 23, 68, 0.4);
 }
 
 .btn-small {
@@ -212,7 +212,7 @@ a:active {
     width: 100%;
     padding: 0.5rem;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     background: var(--bg-tertiary);
     color: var(--text-primary);
     font-size: 0.9rem;
@@ -222,7 +222,7 @@ a:active {
 .form-input:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(255, 20, 147, 0.3);
+    box-shadow: 0 0 0 0.125rem rgba(255, 20, 147, 0.3);
 }
 
 .form-input.error-input {
@@ -231,14 +231,14 @@ a:active {
 
 .form-input.error-input:focus {
     border-color: var(--accent-error);
-    box-shadow: 0 0 0 2px rgba(255, 23, 68, 0.3);
+    box-shadow: 0 0 0 0.125rem rgba(255, 23, 68, 0.3);
 }
 
 .form-select {
     width: 100%;
     padding: 0.5rem;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     background: var(--bg-tertiary);
     color: var(--text-primary);
     font-size: 0.9rem;
@@ -255,7 +255,7 @@ a:active {
 .form-select:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(255, 20, 147, 0.3);
+    box-shadow: 0 0 0 0.125rem rgba(255, 20, 147, 0.3);
 }
 
 .form-select:disabled {
@@ -273,25 +273,25 @@ a:active {
     width: 100%;
     padding: 0.5rem;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     background: var(--bg-tertiary);
     color: var(--text-primary);
     font-size: 0.9rem;
     resize: vertical;
-    min-height: 80px;
+    min-height: 5rem;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-textarea:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(255, 20, 147, 0.3);
+    box-shadow: 0 0 0 0.125rem rgba(255, 20, 147, 0.3);
 }
 
 .selection-card {
     padding: 0.75rem;
-    border: 2px solid var(--border-color);
-    border-radius: 6px;
+    border: 0.125rem solid var(--border-color);
+    border-radius: 0.375rem;
     background: var(--bg-tertiary);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -306,7 +306,7 @@ a:active {
 .selection-card.selected {
     border-color: var(--accent-primary);
     background: rgba(255, 20, 147, 0.15);
-    box-shadow: 0 0 0 1px rgba(255, 20, 147, 0.3);
+    box-shadow: 0 0 0 0.0625rem rgba(255, 20, 147, 0.3);
 }
 
 .selection-card.disabled {
@@ -344,7 +344,7 @@ a:active {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    filter: drop-shadow(0 0 6px rgba(255, 20, 147, 0.3));
+    filter: drop-shadow(0 0 0.375rem rgba(255, 20, 147, 0.3));
 }
 
 .user-info {
@@ -356,7 +356,7 @@ a:active {
 
 .main-content {
     padding: 1.5rem 0;
-    min-height: calc(100vh - 60px);
+    min-height: calc(100vh - 3.75rem);
 }
 
 .grid {
@@ -365,15 +365,15 @@ a:active {
 }
 
 .grid-2 {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(17.5rem, 1fr));
 }
 
 .grid-3 {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(13.75rem, 1fr));
 }
 
 .grid-4 {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(11.25rem, 1fr));
 }
 
 .list {
@@ -387,7 +387,7 @@ a:active {
     justify-content: space-between;
     align-items: center;
     transition: background-color 0.2s ease, transform 0.2s ease;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     margin-bottom: 0.25rem;
 }
 
@@ -397,7 +397,7 @@ a:active {
 
 .list-item:hover {
     background: var(--hover-bg);
-    transform: translateX(2px);
+    transform: translateX(0.125rem);
 }
 
 .compact-list {
@@ -409,7 +409,7 @@ a:active {
 .compact-item {
     padding: 0.5rem;
     background: var(--bg-tertiary);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -506,11 +506,11 @@ a:active {
 }
 
 .spinner {
-    border: 3px solid var(--bg-tertiary);
-    border-top: 3px solid var(--accent-primary);
+    border: 0.1875rem solid var(--bg-tertiary);
+    border-top: 0.1875rem solid var(--accent-primary);
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    width: 1.5rem;
+    height: 1.5rem;
     animation: spin 1s linear infinite;
     margin: 0.75rem auto;
 }
@@ -529,9 +529,9 @@ a:active {
     border: 1px solid var(--accent-error);
     color: var(--accent-error);
     padding: 0.75rem;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     margin-bottom: 0.75rem;
-    box-shadow: 0 0 8px rgba(255, 23, 68, 0.2);
+    box-shadow: 0 0 0.5rem rgba(255, 23, 68, 0.2);
     font-size: 0.9rem;
 }
 
@@ -540,9 +540,9 @@ a:active {
     border: 1px solid var(--accent-success);
     color: var(--accent-success);
     padding: 0.75rem;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     margin-bottom: 0.75rem;
-    box-shadow: 0 0 8px rgba(0, 255, 127, 0.2);
+    box-shadow: 0 0 0.5rem rgba(0, 255, 127, 0.2);
     font-size: 0.9rem;
 }
 
@@ -563,10 +563,10 @@ a:active {
 .modal {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 0.375rem;
     padding: 1.5rem;
     width: 100%;
-    max-width: 800px;
+    max-width: 50vw;
     max-height: 90vh;
     overflow-y: auto;
 }
@@ -592,8 +592,8 @@ a:active {
     cursor: pointer;
     font-size: 1.25rem;
     padding: 0;
-    width: 24px;
-    height: 24px;
+    width: 1.5rem;
+    height: 1.5rem;
     border-radius: 50%;
 }
 
@@ -604,17 +604,17 @@ a:active {
 
 .notification-overlay {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 1.25rem;
+    right: 1.25rem;
     z-index: 1100;
 }
 
 .notification {
     padding: 0.75rem 1rem;
-    border-radius: 6px;
-    max-width: 350px;
-    min-width: 250px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-radius: 0.375rem;
+    max-width: 21.875vw;
+    min-width: 15.625vw;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
     animation: slideIn 0.3s ease-out;
     font-size: 0.9rem;
 }
@@ -645,8 +645,8 @@ a:active {
     cursor: pointer;
     font-size: 1.2rem;
     padding: 0;
-    width: 20px;
-    height: 20px;
+    width: 1.25rem;
+    height: 1.25rem;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -671,41 +671,75 @@ a:active {
 
 .progress-bar {
     background: var(--bg-tertiary);
-    border-radius: 3px;
-    height: 4px;
+    border-radius: 0.1875rem;
+    height: 0.25rem;
     width: 100%;
 }
 
 .progress-fill {
     height: 100%;
-    border-radius: 3px;
+    border-radius: 0.1875rem;
     transition: width 0.3s ease;
 }
 
 .scrollable-list {
-    max-height: 300px;
+    max-height: 18.75rem;
     overflow-y: auto;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     padding: 0.5rem;
 }
 
 .scrollable-list::-webkit-scrollbar {
-    width: 6px;
+    width: 0.375rem;
 }
 
 .scrollable-list::-webkit-scrollbar-track {
     background: var(--bg-tertiary);
-    border-radius: 3px;
+    border-radius: 0.1875rem;
 }
 
 .scrollable-list::-webkit-scrollbar-thumb {
     background: var(--accent-primary);
-    border-radius: 3px;
+    border-radius: 0.1875rem;
 }
 
 .scrollable-list::-webkit-scrollbar-thumb:hover {
     background: var(--accent-secondary);
+}
+
+.scrollable-list-extended {
+    max-height: 37.5rem;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+}
+
+.scrollable-list-extended::-webkit-scrollbar {
+    width: 0.375rem;
+}
+
+.scrollable-list-extended::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 0.1875rem;
+}
+
+.scrollable-list-extended::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 0.1875rem;
+}
+
+.scrollable-list-extended::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-secondary);
+}
+
+.scrollable-list-unlimited {
+    max-height: none;
+    overflow-y: visible;
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    padding: 0.5rem;
 }
 
 .form-compact {
@@ -730,7 +764,7 @@ a:active {
 }
 
 .form-compact .form-textarea {
-    min-height: 60px;
+    min-height: 3.75rem;
 }
 
 .resource-grid {
@@ -740,7 +774,7 @@ a:active {
     align-items: center;
     padding: 0.5rem;
     background: var(--bg-tertiary);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     margin-bottom: 0.5rem;
 }
 
@@ -760,7 +794,7 @@ a:active {
 .inline-form .form-group {
     margin-bottom: 0;
     flex: 1;
-    min-width: 120px;
+    min-width: 7.5rem;
 }
 
 h1 {

@@ -942,7 +942,7 @@ const CurriculumDetail = () => {
                     </div>
 
                     {sortedProjects.length > 0 ? (
-                        <div className="scrollable-list">
+                        <div className="scrollable-list scrollable-list-extended">
                             <div className="compact-list">
                                 {sortedProjects.map(renderProjectCard)}
                             </div>
