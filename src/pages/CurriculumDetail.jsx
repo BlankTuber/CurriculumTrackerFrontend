@@ -23,6 +23,7 @@ import ProjectForm from "../components/ProjectForm";
 import ResourceForm from "../components/ResourceForm";
 import LevelForm from "../components/LevelForm";
 import ProjectFilter from "../components/ProjectFilter";
+import ProjectHierarchyBrowser from "../components/ProjectHierarchyBrowser";
 import Notification from "../components/Notification";
 
 const CurriculumDetail = () => {
@@ -55,6 +56,9 @@ const CurriculumDetail = () => {
     const [topicFilter, setTopicFilter] = useState("");
     const [githubFilter, setGithubFilter] = useState("");
     const [stateFilter, setStateFilter] = useState("");
+
+    const [selectedLevel, setSelectedLevel] = useState(null);
+    const [selectedStage, setSelectedStage] = useState(null);
 
     const [notification, setNotification] = useState({
         isOpen: false,
@@ -301,85 +305,294 @@ const CurriculumDetail = () => {
         setShowEditLevelModal(true);
     };
 
+    const handleHierarchyLevelChange = (level) => {
+        setSelectedLevel(level);
+        if (level) {
+            clearAllFilters();
+        }
+    };
+
+    const handleHierarchyStageChange = (stage) => {
+        setSelectedStage(stage);
+    };
+
+    const clearAllFilters = () => {
+        setSearchQuery("");
+        setStageFilter("");
+        setLevelFilter("");
+        setTopicFilter("");
+        setGithubFilter("");
+        setStateFilter("");
+    };
+
+    const clearHierarchySelection = () => {
+        setSelectedLevel(null);
+        setSelectedStage(null);
+    };
+
+    const isUsingFilters = () => {
+        return (
+            searchQuery ||
+            stageFilter ||
+            levelFilter ||
+            topicFilter ||
+            githubFilter ||
+            stateFilter
+        );
+    };
+
     const getFilteredProjects = () => {
         if (!curriculum?.projects) return [];
 
         let filteredProjects = [...curriculum.projects];
 
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filteredProjects = filteredProjects.filter((project) => {
-                const matchesName = project.name.toLowerCase().includes(query);
-                const matchesDescription = project.description
-                    .toLowerCase()
-                    .includes(query);
-                const matchesIdentifier = project.identifier
-                    ?.toLowerCase()
-                    .includes(query);
-                const matchesTopics = project.topics?.some((topic) =>
-                    topic.toLowerCase().includes(query)
-                );
-                return (
-                    matchesName ||
-                    matchesDescription ||
-                    matchesIdentifier ||
-                    matchesTopics
-                );
-            });
-        }
+        if (isUsingFilters()) {
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                filteredProjects = filteredProjects.filter((project) => {
+                    const matchesName = project.name
+                        .toLowerCase()
+                        .includes(query);
+                    const matchesDescription = project.description
+                        .toLowerCase()
+                        .includes(query);
+                    const matchesIdentifier = project.identifier
+                        ?.toLowerCase()
+                        .includes(query);
+                    const matchesTopics = project.topics?.some((topic) =>
+                        topic.toLowerCase().includes(query)
+                    );
+                    return (
+                        matchesName ||
+                        matchesDescription ||
+                        matchesIdentifier ||
+                        matchesTopics
+                    );
+                });
+            }
 
-        if (stageFilter) {
-            filteredProjects = filterProjectsByStage(
-                filteredProjects,
-                stageFilter
-            );
-        }
-
-        if (levelFilter) {
-            filteredProjects = filterProjectsByLevel(
-                filteredProjects,
-                curriculum.levels,
-                levelFilter
-            );
-        }
-
-        if (topicFilter) {
-            filteredProjects = filteredProjects.filter((project) =>
-                project.topics?.includes(topicFilter)
-            );
-        }
-
-        if (githubFilter) {
-            if (githubFilter === "with") {
-                filteredProjects = filteredProjects.filter(
-                    (project) => project.githubRepo && project.githubRepo.trim()
-                );
-            } else if (githubFilter === "without") {
-                filteredProjects = filteredProjects.filter(
-                    (project) =>
-                        !project.githubRepo || !project.githubRepo.trim()
+            if (stageFilter) {
+                filteredProjects = filterProjectsByStage(
+                    filteredProjects,
+                    stageFilter
                 );
             }
-        }
 
-        if (stateFilter) {
+            if (levelFilter) {
+                filteredProjects = filterProjectsByLevel(
+                    filteredProjects,
+                    curriculum.levels,
+                    levelFilter
+                );
+            }
+
+            if (topicFilter) {
+                filteredProjects = filteredProjects.filter((project) =>
+                    project.topics?.includes(topicFilter)
+                );
+            }
+
+            if (githubFilter) {
+                if (githubFilter === "with") {
+                    filteredProjects = filteredProjects.filter(
+                        (project) =>
+                            project.githubRepo && project.githubRepo.trim()
+                    );
+                } else if (githubFilter === "without") {
+                    filteredProjects = filteredProjects.filter(
+                        (project) =>
+                            !project.githubRepo || !project.githubRepo.trim()
+                    );
+                }
+            }
+
+            if (stateFilter) {
+                filteredProjects = filteredProjects.filter(
+                    (p) => p.state === stateFilter
+                );
+            }
+        } else if (selectedLevel && selectedStage) {
             filteredProjects = filteredProjects.filter(
-                (p) => p.state === stateFilter
+                (project) => project.stage === selectedStage
             );
+        } else {
+            return [];
         }
 
         return sortProjectsByStageAndOrder(filteredProjects);
     };
 
+    const renderProjectCard = (project) => {
+        const projectLevel = getLevelForStage(
+            curriculum.levels || [],
+            project.stage
+        );
+        const githubUrl = constructGithubUrl(
+            user?.githubUsername,
+            project.githubRepo
+        );
+
+        return (
+            <div
+                key={project._id}
+                className="compact-item"
+                style={{ alignItems: "flex-start" }}
+            >
+                <div style={{ flex: 1 }}>
+                    <div
+                        className="flex"
+                        style={{
+                            gap: "0.5rem",
+                            alignItems: "center",
+                            marginBottom: "0.25rem",
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <Link
+                            to={`/project/${project._id}`}
+                            style={{
+                                textDecoration: "none",
+                                color: "inherit",
+                                fontSize: "0.9rem",
+                                fontWeight: "500",
+                            }}
+                        >
+                            {project.name}
+                        </Link>
+                        {project.identifier && (
+                            <span
+                                className="text-primary"
+                                style={{
+                                    fontSize: "0.75rem",
+                                    fontWeight: "600",
+                                }}
+                            >
+                                [{project.identifier}]
+                            </span>
+                        )}
+                        {!selectedStage && (
+                            <span className="text-muted text-xs">
+                                Stage {project.stage}
+                                {project.order && ` #${project.order}`}
+                            </span>
+                        )}
+                        {selectedStage && project.order && (
+                            <span className="text-muted text-xs">
+                                #{project.order}
+                            </span>
+                        )}
+                        {projectLevel && !selectedLevel && (
+                            <span className="text-primary text-xs">
+                                {projectLevel.name}
+                            </span>
+                        )}
+                        <span
+                            className={PROJECT_STATE_COLORS[project.state]}
+                            style={{
+                                fontSize: "0.75rem",
+                                fontWeight: "500",
+                            }}
+                        >
+                            {PROJECT_STATE_LABELS[project.state]}
+                        </span>
+                        {githubUrl && (
+                            <a
+                                href={githubUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary text-xs"
+                            >
+                                GitHub
+                            </a>
+                        )}
+                    </div>
+                    {project.topics && project.topics.length > 0 && (
+                        <div
+                            className="flex"
+                            style={{
+                                gap: "0.25rem",
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            {project.topics.slice(0, 4).map((topic, index) => (
+                                <span
+                                    key={index}
+                                    style={{
+                                        background: "var(--bg-primary)",
+                                        padding: "0.125rem 0.25rem",
+                                        borderRadius: "3px",
+                                        fontSize: "0.65rem",
+                                        color: "var(--text-secondary)",
+                                    }}
+                                >
+                                    {topic}
+                                </span>
+                            ))}
+                            {project.topics.length > 4 && (
+                                <span
+                                    className="text-muted"
+                                    style={{
+                                        fontSize: "0.65rem",
+                                        fontStyle: "italic",
+                                    }}
+                                >
+                                    +{project.topics.length - 4} more
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+                <div className="btn-group">
+                    <select
+                        value={project.state}
+                        onChange={(e) =>
+                            handleUpdateProjectState(project, e.target.value)
+                        }
+                        className="form-select"
+                        style={{
+                            width: "auto",
+                            minWidth: "120px",
+                            fontSize: "0.75rem",
+                            padding: "0.25rem",
+                        }}
+                    >
+                        {Object.entries(PROJECT_STATE_LABELS).map(
+                            ([value, label]) => (
+                                <option key={value} value={value}>
+                                    {label}
+                                </option>
+                            )
+                        )}
+                    </select>
+                    <Link
+                        to={`/project/${project._id}`}
+                        className="btn btn-primary btn-small"
+                        style={{
+                            padding: "0.25rem 0.5rem",
+                            fontSize: "0.7rem",
+                        }}
+                    >
+                        View
+                    </Link>
+                    <button
+                        onClick={() => handleDeleteProjectClick(project)}
+                        className="btn btn-danger btn-small"
+                        style={{
+                            padding: "0.25rem 0.5rem",
+                            fontSize: "0.7rem",
+                        }}
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     const sortedLevels = sortLevelsByOrder(curriculum?.levels || []);
     const sortedProjects = getFilteredProjects();
-    const hasActiveFilters =
-        searchQuery ||
-        stageFilter ||
-        levelFilter ||
-        topicFilter ||
-        githubFilter ||
-        stateFilter;
+    const hasActiveFilters = isUsingFilters();
+    const hasHierarchySelection = selectedLevel && selectedStage;
 
     if (loading) {
         return <LoadingSpinner message="Loading curriculum..." />;
@@ -662,23 +875,68 @@ const CurriculumDetail = () => {
                     )}
                 </div>
 
+                {!hasActiveFilters && (
+                    <ProjectHierarchyBrowser
+                        levels={curriculum.levels || []}
+                        projects={curriculum.projects || []}
+                        selectedLevel={selectedLevel}
+                        selectedStage={selectedStage}
+                        onLevelChange={handleHierarchyLevelChange}
+                        onStageChange={handleHierarchyStageChange}
+                        onAddProject={() => setShowProjectModal(true)}
+                    />
+                )}
+
+                {hasActiveFilters && (
+                    <div className="card">
+                        <div className="card-header">
+                            <div className="flex-between">
+                                <h2 className="card-title">
+                                    Filtered Projects ({sortedProjects.length}
+                                    {curriculum.projects && (
+                                        <span className="text-muted">
+                                            /{curriculum.projects.length}
+                                        </span>
+                                    )}
+                                    )
+                                </h2>
+                                <button
+                                    onClick={() => setShowProjectModal(true)}
+                                    className="btn btn-primary btn-small"
+                                >
+                                    Add Project
+                                </button>
+                            </div>
+                        </div>
+
+                        {sortedProjects.length > 0 ? (
+                            <div className="scrollable-list">
+                                <div className="compact-list">
+                                    {sortedProjects.map(renderProjectCard)}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-muted text-center text-sm">
+                                No projects match the current filters
+                            </p>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {hasHierarchySelection && (
                 <div className="card">
                     <div className="card-header">
                         <div className="flex-between">
                             <h2 className="card-title">
-                                Projects ({sortedProjects.length}
-                                {hasActiveFilters && curriculum.projects && (
-                                    <span className="text-muted">
-                                        /{curriculum.projects.length}
-                                    </span>
-                                )}
-                                )
+                                Projects in {selectedLevel.name} - Stage{" "}
+                                {selectedStage} ({sortedProjects.length})
                             </h2>
                             <button
-                                onClick={() => setShowProjectModal(true)}
-                                className="btn btn-primary btn-small"
+                                onClick={clearHierarchySelection}
+                                className="btn btn-secondary btn-small"
                             >
-                                Add Project
+                                Clear Selection
                             </button>
                         </div>
                     </div>
@@ -686,228 +944,17 @@ const CurriculumDetail = () => {
                     {sortedProjects.length > 0 ? (
                         <div className="scrollable-list">
                             <div className="compact-list">
-                                {sortedProjects.map((project) => {
-                                    const projectLevel = getLevelForStage(
-                                        curriculum.levels || [],
-                                        project.stage
-                                    );
-                                    const githubUrl = constructGithubUrl(
-                                        user?.githubUsername,
-                                        project.githubRepo
-                                    );
-
-                                    return (
-                                        <div
-                                            key={project._id}
-                                            className="compact-item"
-                                            style={{ alignItems: "flex-start" }}
-                                        >
-                                            <div style={{ flex: 1 }}>
-                                                <div
-                                                    className="flex"
-                                                    style={{
-                                                        gap: "0.5rem",
-                                                        alignItems: "center",
-                                                        marginBottom: "0.25rem",
-                                                        flexWrap: "wrap",
-                                                    }}
-                                                >
-                                                    <Link
-                                                        to={`/project/${project._id}`}
-                                                        style={{
-                                                            textDecoration:
-                                                                "none",
-                                                            color: "inherit",
-                                                            fontSize: "0.9rem",
-                                                            fontWeight: "500",
-                                                        }}
-                                                    >
-                                                        {project.name}
-                                                    </Link>
-                                                    {project.identifier && (
-                                                        <span
-                                                            className="text-primary"
-                                                            style={{
-                                                                fontSize:
-                                                                    "0.75rem",
-                                                                fontWeight:
-                                                                    "600",
-                                                            }}
-                                                        >
-                                                            [
-                                                            {project.identifier}
-                                                            ]
-                                                        </span>
-                                                    )}
-                                                    <span className="text-muted text-xs">
-                                                        Stage {project.stage}
-                                                        {project.order &&
-                                                            ` #${project.order}`}
-                                                    </span>
-                                                    {projectLevel && (
-                                                        <span className="text-primary text-xs">
-                                                            {projectLevel.name}
-                                                        </span>
-                                                    )}
-                                                    <span
-                                                        className={
-                                                            PROJECT_STATE_COLORS[
-                                                                project.state
-                                                            ]
-                                                        }
-                                                        style={{
-                                                            fontSize: "0.75rem",
-                                                            fontWeight: "500",
-                                                        }}
-                                                    >
-                                                        {
-                                                            PROJECT_STATE_LABELS[
-                                                                project.state
-                                                            ]
-                                                        }
-                                                    </span>
-                                                    {githubUrl && (
-                                                        <a
-                                                            href={githubUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-primary text-xs"
-                                                        >
-                                                            GitHub
-                                                        </a>
-                                                    )}
-                                                </div>
-                                                {project.topics &&
-                                                    project.topics.length >
-                                                        0 && (
-                                                        <div
-                                                            className="flex"
-                                                            style={{
-                                                                gap: "0.25rem",
-                                                                flexWrap:
-                                                                    "wrap",
-                                                            }}
-                                                        >
-                                                            {project.topics
-                                                                .slice(0, 4)
-                                                                .map(
-                                                                    (
-                                                                        topic,
-                                                                        index
-                                                                    ) => (
-                                                                        <span
-                                                                            key={
-                                                                                index
-                                                                            }
-                                                                            style={{
-                                                                                background:
-                                                                                    "var(--bg-primary)",
-                                                                                padding:
-                                                                                    "0.125rem 0.25rem",
-                                                                                borderRadius:
-                                                                                    "3px",
-                                                                                fontSize:
-                                                                                    "0.65rem",
-                                                                                color: "var(--text-secondary)",
-                                                                            }}
-                                                                        >
-                                                                            {
-                                                                                topic
-                                                                            }
-                                                                        </span>
-                                                                    )
-                                                                )}
-                                                            {project.topics
-                                                                .length > 4 && (
-                                                                <span
-                                                                    className="text-muted"
-                                                                    style={{
-                                                                        fontSize:
-                                                                            "0.65rem",
-                                                                        fontStyle:
-                                                                            "italic",
-                                                                    }}
-                                                                >
-                                                                    +
-                                                                    {project
-                                                                        .topics
-                                                                        .length -
-                                                                        4}{" "}
-                                                                    more
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                            </div>
-                                            <div className="btn-group">
-                                                <select
-                                                    value={project.state}
-                                                    onChange={(e) =>
-                                                        handleUpdateProjectState(
-                                                            project,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className="form-select"
-                                                    style={{
-                                                        width: "auto",
-                                                        minWidth: "120px",
-                                                        fontSize: "0.75rem",
-                                                        padding: "0.25rem",
-                                                    }}
-                                                >
-                                                    {Object.entries(
-                                                        PROJECT_STATE_LABELS
-                                                    ).map(([value, label]) => (
-                                                        <option
-                                                            key={value}
-                                                            value={value}
-                                                        >
-                                                            {label}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <Link
-                                                    to={`/project/${project._id}`}
-                                                    className="btn btn-primary btn-small"
-                                                    style={{
-                                                        padding:
-                                                            "0.25rem 0.5rem",
-                                                        fontSize: "0.7rem",
-                                                    }}
-                                                >
-                                                    View
-                                                </Link>
-                                                <button
-                                                    onClick={() =>
-                                                        handleDeleteProjectClick(
-                                                            project
-                                                        )
-                                                    }
-                                                    className="btn btn-danger btn-small"
-                                                    style={{
-                                                        padding:
-                                                            "0.25rem 0.5rem",
-                                                        fontSize: "0.7rem",
-                                                    }}
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                {sortedProjects.map(renderProjectCard)}
                             </div>
                         </div>
                     ) : (
                         <p className="text-muted text-center text-sm">
-                            {hasActiveFilters
-                                ? "No projects match the current filters"
-                                : "No projects yet"}
+                            No projects found in {selectedLevel.name}, Stage{" "}
+                            {selectedStage}
                         </p>
                     )}
                 </div>
-            </div>
+            )}
 
             <Modal
                 isOpen={showEditModal}

@@ -29,7 +29,6 @@ const PrerequisiteSelector = ({
             filtered = filtered.filter(
                 (project) =>
                     project.name.toLowerCase().includes(search) ||
-                    project.description.toLowerCase().includes(search) ||
                     (project.identifier &&
                         project.identifier.toLowerCase().includes(search)) ||
                     (project.topics &&
@@ -99,7 +98,7 @@ const PrerequisiteSelector = ({
             <div className="form-group">
                 <input
                     type="text"
-                    placeholder="Search by name, description, identifier, or topics..."
+                    placeholder="Search by name, identifier, or topics..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="form-input"
@@ -316,16 +315,6 @@ const PrerequisiteSelector = ({
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <p
-                                                        className="text-muted"
-                                                        style={{
-                                                            fontSize: "0.8rem",
-                                                            margin: "0 0 0.25rem 0",
-                                                            lineHeight: "1.3",
-                                                        }}
-                                                    >
-                                                        {project.description}
-                                                    </p>
                                                     {project.topics &&
                                                         project.topics.length >
                                                             0 && (

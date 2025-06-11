@@ -46,6 +46,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     );
 
     const [allProjects, setAllProjects] = useState([]);
+    const [projectsLoaded, setProjectsLoaded] = useState(false);
     const [defaultsSet, setDefaultsSet] = useState(isEditing);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -55,14 +56,14 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     }, []);
 
     useEffect(() => {
-        if (!defaultsSet && allProjects.length >= 0) {
+        if (!defaultsSet && projectsLoaded) {
             setInitialDefaults();
             setDefaultsSet(true);
         }
-    }, [allProjects, defaultsSet, isEditing]);
+    }, [allProjects, defaultsSet, isEditing, projectsLoaded]);
 
     useEffect(() => {
-        if (formData.stage && !isEditing && defaultsSet) {
+        if (formData.stage && !isEditing && defaultsSet && projectsLoaded) {
             const defaultOrder = getNextAvailableOrder(
                 allProjects,
                 formData.stage
@@ -72,7 +73,7 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                 order: defaultOrder.toString(),
             }));
         }
-    }, [formData.stage, allProjects, isEditing, defaultsSet]);
+    }, [formData.stage, allProjects, isEditing, defaultsSet, projectsLoaded]);
 
     const fetchAllProjects = async () => {
         try {
@@ -82,15 +83,20 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
             );
         } catch (error) {
             console.error("Failed to fetch projects:", error);
+        } finally {
+            setProjectsLoaded(true);
         }
     };
 
     const setInitialDefaults = () => {
         if (isEditing) return;
 
-        const usedStages = getUniqueStages(allProjects);
-        const defaultStage =
-            usedStages.length > 0 ? Math.max(...usedStages) : 1;
+        const sortedByDate = [...allProjects].sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        const mostRecentProject = sortedByDate[0];
+
+        const defaultStage = mostRecentProject ? mostRecentProject.stage : 1;
         const defaultOrder = getNextAvailableOrder(allProjects, defaultStage);
 
         setFormData((prev) => ({
