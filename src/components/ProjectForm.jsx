@@ -106,10 +106,19 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
     const fetchProjectsAndCurriculum = async () => {
         try {
             setError("");
-            const [projectsData, curriculumDetails] = await Promise.all([
-                projectAPI.getAll(),
-                curriculumAPI.getById(curriculumId),
-            ]);
+
+            let projectsData;
+            try {
+                projectsData = await projectAPI.getAll();
+            } catch (projectError) {
+                if (projectError.message === "No projects found") {
+                    projectsData = { projects: [] };
+                } else {
+                    throw projectError;
+                }
+            }
+
+            const curriculumDetails = await curriculumAPI.getById(curriculumId);
 
             if (!curriculumDetails || !curriculumDetails.curriculum) {
                 throw new Error("Failed to load curriculum data");
