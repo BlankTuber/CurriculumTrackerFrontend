@@ -11,6 +11,7 @@ import {
     getUsedOrders,
     getUniqueStages,
 } from "../utils/stageUtils";
+import TopicInput from "./TopicInput";
 
 const RESOURCE_TYPES = [
     "documentation",
@@ -36,8 +37,6 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         stage: project?.stage || "",
         order: project?.order || "",
     });
-
-    const [topicInput, setTopicInput] = useState("");
 
     const [projectResources, setProjectResources] = useState(
         project?.projectResources && project.projectResources.length > 0
@@ -132,29 +131,11 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
         });
     };
 
-    const handleTopicAdd = () => {
-        const trimmedTopic = topicInput.trim();
-        if (trimmedTopic && !formData.topics.includes(trimmedTopic)) {
-            setFormData((prev) => ({
-                ...prev,
-                topics: [...prev.topics, trimmedTopic],
-            }));
-            setTopicInput("");
-        }
-    };
-
-    const handleTopicRemove = (topicToRemove) => {
+    const handleTopicsChange = (newTopics) => {
         setFormData((prev) => ({
             ...prev,
-            topics: prev.topics.filter((topic) => topic !== topicToRemove),
+            topics: newTopics,
         }));
-    };
-
-    const handleTopicInputKeyPress = (e) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            handleTopicAdd();
-        }
     };
 
     const handleResourceChange = (index, field, value) => {
@@ -483,74 +464,12 @@ const ProjectForm = ({ project = null, curriculumId, onSuccess, onCancel }) => {
                 </div>
             </div>
 
-            <div className="form-group">
-                <label className="form-label">Topics</label>
-                <div className="inline-form">
-                    <div className="form-group" style={{ flex: 2 }}>
-                        <input
-                            type="text"
-                            value={topicInput}
-                            onChange={(e) => setTopicInput(e.target.value)}
-                            onKeyPress={handleTopicInputKeyPress}
-                            className="form-input"
-                            maxLength={50}
-                            disabled={loading}
-                            placeholder="e.g., React, Authentication"
-                        />
-                    </div>
-                    <button
-                        type="button"
-                        onClick={handleTopicAdd}
-                        className="btn btn-secondary btn-small"
-                        disabled={loading || !topicInput.trim()}
-                    >
-                        Add
-                    </button>
-                </div>
-                {formData.topics.length > 0 && (
-                    <div
-                        className="flex"
-                        style={{
-                            gap: "0.25rem",
-                            flexWrap: "wrap",
-                            marginTop: "0.25rem",
-                        }}
-                    >
-                        {formData.topics.map((topic, index) => (
-                            <span
-                                key={index}
-                                className="tag"
-                                style={{
-                                    background: "var(--bg-tertiary)",
-                                    padding: "0.25rem 0.5rem",
-                                    borderRadius: "4px",
-                                    fontSize: "0.75rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.25rem",
-                                }}
-                            >
-                                {topic}
-                                <button
-                                    type="button"
-                                    onClick={() => handleTopicRemove(topic)}
-                                    disabled={loading}
-                                    style={{
-                                        background: "none",
-                                        border: "none",
-                                        color: "var(--text-muted)",
-                                        cursor: "pointer",
-                                        padding: "0",
-                                        fontSize: "0.8rem",
-                                    }}
-                                >
-                                    ×
-                                </button>
-                            </span>
-                        ))}
-                    </div>
-                )}
-            </div>
+            <TopicInput
+                topics={formData.topics}
+                onTopicsChange={handleTopicsChange}
+                existingProjects={allProjects}
+                disabled={loading}
+            />
 
             <div className="form-group">
                 <div className="flex-between">
