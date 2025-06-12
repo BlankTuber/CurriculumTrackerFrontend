@@ -238,6 +238,31 @@ const UserProfile = () => {
         });
     };
 
+    const getCompletionRate = () => {
+        if (!stats || !stats.totalProjects || stats.totalProjects === 0) {
+            return 0;
+        }
+        return Math.round(
+            (stats.completedProjects / stats.totalProjects) * 100
+        );
+    };
+
+    const getMostActiveMetric = () => {
+        if (!stats || !stats.curriculaCount || stats.curriculaCount === 0) {
+            return "No curricula yet";
+        }
+
+        const avgProjectsPerCurriculum =
+            stats.totalProjects / stats.curriculaCount;
+        if (avgProjectsPerCurriculum >= 10) {
+            return "High activity";
+        } else if (avgProjectsPerCurriculum >= 5) {
+            return "Moderate activity";
+        } else {
+            return "Getting started";
+        }
+    };
+
     if (loading) {
         return <LoadingSpinner message="Loading profile..." />;
     }
@@ -300,7 +325,7 @@ const UserProfile = () => {
 
                 <div className="card">
                     <div className="card-header">
-                        <h2 className="card-title">Statistics</h2>
+                        <h2 className="card-title">Learning Statistics</h2>
                     </div>
 
                     {stats ? (
@@ -313,11 +338,91 @@ const UserProfile = () => {
                                     {stats.curriculaCount || 0}
                                 </span>
                             </div>
+                            <div className="compact-item">
+                                <span className="text-muted">
+                                    Total Projects:
+                                </span>
+                                <span className="text-primary">
+                                    {stats.totalProjects || 0}
+                                </span>
+                            </div>
+                            <div className="compact-item">
+                                <span className="text-muted">
+                                    Completed Projects:
+                                </span>
+                                <span className="text-success">
+                                    {stats.completedProjects || 0}
+                                </span>
+                            </div>
+                            <div className="compact-item">
+                                <span className="text-muted">
+                                    Completion Rate:
+                                </span>
+                                <span
+                                    className={
+                                        getCompletionRate() >= 80
+                                            ? "text-success"
+                                            : getCompletionRate() >= 50
+                                            ? "text-warning"
+                                            : "text-muted"
+                                    }
+                                >
+                                    {getCompletionRate()}%
+                                </span>
+                            </div>
+                            <div className="compact-item">
+                                <span className="text-muted">Total Notes:</span>
+                                <span className="text-info">
+                                    {stats.totalNotes || 0}
+                                </span>
+                            </div>
+                            <div className="compact-item">
+                                <span className="text-muted">
+                                    Total Resources:
+                                </span>
+                                <span className="text-info">
+                                    {stats.totalResources || 0}
+                                </span>
+                            </div>
+                            <div className="compact-item">
+                                <span className="text-muted">
+                                    Activity Level:
+                                </span>
+                                <span className="text-primary">
+                                    {getMostActiveMetric()}
+                                </span>
+                            </div>
                         </div>
                     ) : (
                         <p className="text-muted text-center text-sm">
                             No statistics available
                         </p>
+                    )}
+
+                    {stats && stats.totalProjects > 0 && (
+                        <div style={{ marginTop: "0.75rem" }}>
+                            <div className="progress-bar">
+                                <div
+                                    className="progress-fill"
+                                    style={{
+                                        background:
+                                            getCompletionRate() >= 80
+                                                ? "var(--accent-success)"
+                                                : getCompletionRate() >= 50
+                                                ? "var(--accent-warning)"
+                                                : "var(--accent-primary)",
+                                        width: `${getCompletionRate()}%`,
+                                    }}
+                                ></div>
+                            </div>
+                            <div
+                                className="text-center text-xs text-muted"
+                                style={{ marginTop: "0.25rem" }}
+                            >
+                                Overall Progress: {stats.completedProjects}/
+                                {stats.totalProjects} projects completed
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>

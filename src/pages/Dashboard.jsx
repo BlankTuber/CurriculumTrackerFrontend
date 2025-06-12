@@ -4,7 +4,7 @@ import { curriculumAPI } from "../utils/api";
 import {
     getLevelForStage,
     getProjectStats,
-    getNextIncompleteProject,
+    getNextProjects,
 } from "../utils/stageUtils";
 import {
     PROJECT_STATE_COLORS,
@@ -158,6 +158,168 @@ const Dashboard = () => {
         };
     };
 
+    const renderNextProjectCard = (project, index, curriculum) => {
+        const level = getLevelForStage(curriculum.levels || [], project.stage);
+        const stageDefinition =
+            curriculum.stages && Array.isArray(curriculum.stages)
+                ? curriculum.stages.find(
+                      (s) => s && s.stageNumber === project.stage
+                  )
+                : null;
+        const githubUrl =
+            user && user.githubUsername && project.githubRepo
+                ? constructGithubUrl(user.githubUsername, project.githubRepo)
+                : null;
+
+        const isMainProject = index === 0;
+        const cardStyle = isMainProject
+            ? {
+                  background: "var(--bg-tertiary)",
+                  padding: "0.75rem",
+                  borderRadius: "4px",
+                  marginBottom: "0.75rem",
+              }
+            : {
+                  background: "var(--bg-secondary)",
+                  padding: "0.5rem",
+                  borderRadius: "4px",
+                  marginBottom: "0.5rem",
+                  opacity: "0.8",
+              };
+
+        return (
+            <div key={project._id} style={cardStyle}>
+                <div
+                    className="flex-between"
+                    style={{ alignItems: "flex-start" }}
+                >
+                    <div style={{ flex: 1 }}>
+                        <div
+                            className="flex"
+                            style={{
+                                gap: "0.25rem",
+                                alignItems: "center",
+                                marginBottom: "0.25rem",
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            <Link
+                                to={`/project/${project._id}`}
+                                style={{
+                                    textDecoration: "none",
+                                    color: "inherit",
+                                    fontSize: isMainProject
+                                        ? "0.9rem"
+                                        : "0.85rem",
+                                    fontWeight: isMainProject ? "500" : "400",
+                                }}
+                            >
+                                {project.name || "Untitled Project"}
+                            </Link>
+                            {project.identifier && (
+                                <span
+                                    className="text-primary"
+                                    style={{
+                                        fontSize: isMainProject
+                                            ? "0.75rem"
+                                            : "0.7rem",
+                                        fontWeight: "600",
+                                    }}
+                                >
+                                    [{project.identifier}]
+                                </span>
+                            )}
+                            {!isMainProject && (
+                                <span
+                                    className="text-muted"
+                                    style={{ fontSize: "0.7rem" }}
+                                >
+                                    (Up next)
+                                </span>
+                            )}
+                        </div>
+                        <div
+                            className="flex"
+                            style={{
+                                gap: "0.5rem",
+                                alignItems: "center",
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            <span
+                                className="text-muted"
+                                style={{
+                                    fontSize: isMainProject
+                                        ? "0.75rem"
+                                        : "0.7rem",
+                                }}
+                            >
+                                Stage {project.stage || "N/A"}
+                                {project.order && ` #${project.order}`}
+                            </span>
+                            {stageDefinition && stageDefinition.name && (
+                                <span
+                                    className="text-info"
+                                    style={{
+                                        fontSize: isMainProject
+                                            ? "0.75rem"
+                                            : "0.7rem",
+                                    }}
+                                >
+                                    {stageDefinition.name}
+                                </span>
+                            )}
+                            {level && (
+                                <span
+                                    className="text-primary"
+                                    style={{
+                                        fontSize: isMainProject
+                                            ? "0.75rem"
+                                            : "0.7rem",
+                                    }}
+                                >
+                                    {level.name || "Unnamed Level"}
+                                    {level.defaultIdentifier &&
+                                        ` (${level.defaultIdentifier})`}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    <div
+                        className="flex"
+                        style={{
+                            gap: "0.25rem",
+                            alignItems: "center",
+                        }}
+                    >
+                        <span
+                            className={
+                                PROJECT_STATE_COLORS[project.state] ||
+                                "text-muted"
+                            }
+                            style={{
+                                fontSize: isMainProject ? "0.75rem" : "0.7rem",
+                            }}
+                        >
+                            ●
+                        </span>
+                        {githubUrl && isMainProject && (
+                            <a
+                                href={githubUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary"
+                                style={{ fontSize: "0.75rem" }}
+                            >
+                                GitHub
+                            </a>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     if (loading) {
         return <LoadingSpinner message="Loading your curricula..." />;
     }
@@ -211,8 +373,9 @@ const Dashboard = () => {
                         if (!curriculum || !curriculum._id) return null;
 
                         const progress = getCurriculumProgress(curriculum);
-                        const nextProject = getNextIncompleteProject(
-                            curriculum.projects || []
+                        const nextProjects = getNextProjects(
+                            curriculum.projects || [],
+                            3
                         );
 
                         return (
@@ -295,157 +458,81 @@ const Dashboard = () => {
                                     </p>
                                 )}
 
-                                {nextProject && (
-                                    <div
-                                        style={{
-                                            background: "var(--bg-tertiary)",
-                                            padding: "0.5rem",
-                                            borderRadius: "4px",
-                                            marginBottom: "0.75rem",
-                                        }}
-                                    >
-                                        <div
-                                            className="flex-between"
-                                            style={{ alignItems: "flex-start" }}
+                                {nextProjects.length > 0 && (
+                                    <div style={{ marginBottom: "0.75rem" }}>
+                                        <h4
+                                            className="text-muted"
+                                            style={{
+                                                fontSize: "0.85rem",
+                                                marginBottom: "0.5rem",
+                                            }}
                                         >
-                                            <div style={{ flex: 1 }}>
-                                                <div
-                                                    className="flex"
+                                            {nextProjects.length === 1
+                                                ? "Next Project"
+                                                : `Next ${nextProjects.length} Projects`}
+                                        </h4>
+                                        {nextProjects.map((project, index) =>
+                                            renderNextProjectCard(
+                                                project,
+                                                index,
+                                                curriculum
+                                            )
+                                        )}
+                                        {nextProjects.length < 3 &&
+                                            progress.percentage < 100 && (
+                                                <p
+                                                    className="text-muted text-xs text-center"
                                                     style={{
-                                                        gap: "0.25rem",
-                                                        alignItems: "center",
-                                                        marginBottom: "0.25rem",
+                                                        marginTop: "0.5rem",
                                                     }}
                                                 >
-                                                    <Link
-                                                        to={`/project/${nextProject._id}`}
-                                                        style={{
-                                                            textDecoration:
-                                                                "none",
-                                                            color: "inherit",
-                                                            fontSize: "0.9rem",
-                                                            fontWeight: "500",
-                                                        }}
-                                                    >
-                                                        {nextProject.name ||
-                                                            "Untitled Project"}
-                                                    </Link>
-                                                    {nextProject.identifier && (
-                                                        <span
-                                                            className="text-primary"
-                                                            style={{
-                                                                fontSize:
-                                                                    "0.75rem",
-                                                                fontWeight:
-                                                                    "600",
-                                                            }}
-                                                        >
-                                                            [
-                                                            {
-                                                                nextProject.identifier
-                                                            }
-                                                            ]
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div
-                                                    className="flex"
-                                                    style={{
-                                                        gap: "0.5rem",
-                                                        alignItems: "center",
-                                                        flexWrap: "wrap",
-                                                    }}
-                                                >
-                                                    <span className="text-muted text-xs">
-                                                        Stage{" "}
-                                                        {nextProject.stage ||
-                                                            "N/A"}
-                                                        {nextProject.order &&
-                                                            ` #${nextProject.order}`}
-                                                    </span>
-                                                    {(() => {
-                                                        const stageDefinition =
-                                                            curriculum.stages &&
-                                                            Array.isArray(
-                                                                curriculum.stages
-                                                            )
-                                                                ? curriculum.stages.find(
-                                                                      (s) =>
-                                                                          s &&
-                                                                          s.stageNumber ===
-                                                                              nextProject.stage
-                                                                  )
-                                                                : null;
-                                                        if (
-                                                            stageDefinition &&
-                                                            stageDefinition.name
-                                                        ) {
-                                                            return (
-                                                                <span className="text-info text-xs">
-                                                                    {
-                                                                        stageDefinition.name
-                                                                    }
-                                                                </span>
-                                                            );
-                                                        }
-                                                        return null;
-                                                    })()}
-                                                    {(() => {
-                                                        const level =
-                                                            getLevelForStage(
-                                                                curriculum.levels ||
-                                                                    [],
-                                                                nextProject.stage
-                                                            );
-                                                        return level ? (
-                                                            <span className="text-primary text-xs">
-                                                                {level.name ||
-                                                                    "Unnamed Level"}
-                                                                {level.defaultIdentifier &&
-                                                                    ` (${level.defaultIdentifier})`}
-                                                            </span>
-                                                        ) : null;
-                                                    })()}
-                                                </div>
-                                            </div>
-                                            <div
-                                                className="flex"
-                                                style={{
-                                                    gap: "0.25rem",
-                                                    alignItems: "center",
-                                                }}
-                                            >
-                                                <span
-                                                    className={
-                                                        PROJECT_STATE_COLORS[
-                                                            nextProject.state
-                                                        ] || "text-muted"
-                                                    }
-                                                    style={{
-                                                        fontSize: "0.75rem",
-                                                    }}
-                                                >
-                                                    ●
-                                                </span>
-                                                {nextProject.githubRepo &&
-                                                    user &&
-                                                    user.githubUsername && (
-                                                        <a
-                                                            href={constructGithubUrl(
-                                                                user.githubUsername,
-                                                                nextProject.githubRepo
-                                                            )}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-primary text-xs"
-                                                        >
-                                                            GitHub
-                                                        </a>
-                                                    )}
-                                            </div>
-                                        </div>
+                                                    {nextProjects.length === 1
+                                                        ? "Only 1 project remaining"
+                                                        : `${nextProjects.length} projects remaining`}
+                                                </p>
+                                            )}
                                     </div>
                                 )}
+
+                                {nextProjects.length === 0 &&
+                                    progress.percentage === 100 && (
+                                        <div
+                                            style={{
+                                                background:
+                                                    "var(--bg-tertiary)",
+                                                padding: "0.75rem",
+                                                borderRadius: "4px",
+                                                marginBottom: "0.75rem",
+                                                textAlign: "center",
+                                            }}
+                                        >
+                                            <span className="text-success">
+                                                🎉 Curriculum Complete!
+                                            </span>
+                                        </div>
+                                    )}
+
+                                {nextProjects.length === 0 &&
+                                    progress.percentage < 100 &&
+                                    progress.total > 0 && (
+                                        <div
+                                            style={{
+                                                background:
+                                                    "var(--bg-tertiary)",
+                                                padding: "0.75rem",
+                                                borderRadius: "4px",
+                                                marginBottom: "0.75rem",
+                                                textAlign: "center",
+                                            }}
+                                        >
+                                            <p
+                                                className="text-info text-sm"
+                                                style={{ margin: 0 }}
+                                            >
+                                                All projects in progress
+                                            </p>
+                                        </div>
+                                    )}
 
                                 <div className="btn-group">
                                     <Link

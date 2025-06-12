@@ -12,7 +12,6 @@ import {
 import {
     PROJECT_STATES,
     PROJECT_STATE_LABELS,
-    PROJECT_STATE_COLORS,
     constructGithubUrl,
 } from "../utils/projectUtils";
 import { useAuth } from "../contexts/AuthContext";
@@ -25,6 +24,7 @@ import LevelForm from "../components/LevelForm";
 import StageForm from "../components/StageForm";
 import ProjectFilter from "../components/ProjectFilter";
 import ProjectHierarchyBrowser from "../components/ProjectHierarchyBrowser";
+import ProjectStateToggle from "../components/ProjectStateToggle";
 import Notification from "../components/Notification";
 
 const CurriculumDetail = () => {
@@ -65,6 +65,8 @@ const CurriculumDetail = () => {
 
     const [selectedLevel, setSelectedLevel] = useState(null);
     const [selectedStage, setSelectedStage] = useState(null);
+
+    const [updatingStates, setUpdatingStates] = useState(new Set());
 
     const [notification, setNotification] = useState({
         isOpen: false,
@@ -236,6 +238,8 @@ const CurriculumDetail = () => {
             return;
         }
 
+        setUpdatingStates((prev) => new Set(prev).add(project._id));
+
         try {
             const result = await projectAPI.update(project._id, {
                 state: newState,
@@ -274,6 +278,12 @@ const CurriculumDetail = () => {
                 "Error",
                 `Failed to update project: ${error.message}`
             );
+        } finally {
+            setUpdatingStates((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(project._id);
+                return newSet;
+            });
         }
     };
 
@@ -608,6 +618,7 @@ const CurriculumDetail = () => {
             user && user.githubUsername,
             project.githubRepo
         );
+        const isUpdating = updatingStates.has(project._id);
 
         return (
             <div
@@ -663,18 +674,6 @@ const CurriculumDetail = () => {
                                 {projectLevel.name || "Unnamed Level"}
                             </span>
                         )}
-                        <span
-                            className={
-                                PROJECT_STATE_COLORS[project.state] ||
-                                "text-muted"
-                            }
-                            style={{
-                                fontSize: "0.75rem",
-                                fontWeight: "500",
-                            }}
-                        >
-                            {PROJECT_STATE_LABELS[project.state] || "Unknown"}
-                        </span>
                         {githubUrl && (
                             <a
                                 href={githubUrl}
@@ -727,27 +726,16 @@ const CurriculumDetail = () => {
                         )}
                 </div>
                 <div className="btn-group">
-                    <select
-                        value={project.state || PROJECT_STATES.NOT_STARTED}
-                        onChange={(e) =>
-                            handleUpdateProjectState(project, e.target.value)
+                    <ProjectStateToggle
+                        currentState={
+                            project.state || PROJECT_STATES.NOT_STARTED
                         }
-                        className="form-select"
-                        style={{
-                            width: "auto",
-                            minWidth: "120px",
-                            fontSize: "0.75rem",
-                            padding: "0.25rem",
-                        }}
-                    >
-                        {Object.entries(PROJECT_STATE_LABELS).map(
-                            ([value, label]) => (
-                                <option key={value} value={value}>
-                                    {label}
-                                </option>
-                            )
-                        )}
-                    </select>
+                        onStateChange={(newState) =>
+                            handleUpdateProjectState(project, newState)
+                        }
+                        disabled={isUpdating}
+                        size="small"
+                    />
                     <Link
                         to={`/project/${project._id}`}
                         className="btn btn-primary btn-small"

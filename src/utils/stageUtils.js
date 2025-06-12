@@ -111,6 +111,17 @@ export const getNextIncompleteProject = (projects) => {
     return sortedProjects.find((p) => p && !isProjectCompleted(p)) || null;
 };
 
+export const getNextProjects = (projects, count = 3) => {
+    if (!projects || !Array.isArray(projects)) return [];
+
+    const sortedProjects = sortProjectsByStageAndOrder(projects);
+    const incompleteProjects = sortedProjects.filter(
+        (p) => p && !isProjectCompleted(p)
+    );
+
+    return incompleteProjects.slice(0, count);
+};
+
 export const getNextAvailableOrder = (
     projects,
     stage,

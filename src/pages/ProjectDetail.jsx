@@ -3,8 +3,6 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { projectAPI, noteAPI } from "../utils/api";
 import {
     PROJECT_STATES,
-    PROJECT_STATE_LABELS,
-    PROJECT_STATE_COLORS,
     constructGithubUrl,
     safeFormatDate,
 } from "../utils/projectUtils";
@@ -15,6 +13,7 @@ import ProjectForm from "../components/ProjectForm";
 import ResourceForm from "../components/ResourceForm";
 import NoteForm from "../components/NoteForm";
 import PrerequisiteManager from "../components/PrerequisiteManager";
+import ProjectStateToggle from "../components/ProjectStateToggle";
 import Notification from "../components/Notification";
 
 const ProjectDetail = () => {
@@ -107,11 +106,7 @@ const ProjectDetail = () => {
                 curriculum: originalCurriculum,
             };
             setProject(projectWithCurriculum);
-            showNotification(
-                "success",
-                "Success",
-                `Project state updated to ${PROJECT_STATE_LABELS[newState]}!`
-            );
+            showNotification("success", "Success", `Project state updated!`);
         } catch (error) {
             showNotification(
                 "error",
@@ -413,15 +408,6 @@ const ProjectDetail = () => {
                                 [{project.identifier}]
                             </span>
                         )}
-                        <span
-                            className={
-                                PROJECT_STATE_COLORS[project.state] ||
-                                "text-muted"
-                            }
-                            style={{ fontSize: "0.9rem", fontWeight: "500" }}
-                        >
-                            {PROJECT_STATE_LABELS[project.state] || "Unknown"}
-                        </span>
                     </div>
                     {project.description && (
                         <p
@@ -506,23 +492,13 @@ const ProjectDetail = () => {
                         )}
                 </div>
                 <div className="btn-group">
-                    <select
-                        value={project.state || PROJECT_STATES.NOT_STARTED}
-                        onChange={(e) =>
-                            handleUpdateProjectState(e.target.value)
+                    <ProjectStateToggle
+                        currentState={
+                            project.state || PROJECT_STATES.NOT_STARTED
                         }
-                        className="form-select"
+                        onStateChange={handleUpdateProjectState}
                         disabled={stateUpdateLoading}
-                        style={{ width: "auto", minWidth: "130px" }}
-                    >
-                        {Object.entries(PROJECT_STATE_LABELS).map(
-                            ([value, label]) => (
-                                <option key={value} value={value}>
-                                    {label}
-                                </option>
-                            )
-                        )}
-                    </select>
+                    />
                     <button
                         onClick={() => setShowEditModal(true)}
                         className="btn btn-secondary btn-small"
@@ -644,20 +620,6 @@ const ProjectDetail = () => {
                                                     Stage{" "}
                                                     {prerequisite.stage ||
                                                         "N/A"}
-                                                </span>
-                                                <span
-                                                    className={
-                                                        PROJECT_STATE_COLORS[
-                                                            prerequisite.state
-                                                        ] || "text-muted"
-                                                    }
-                                                    style={{
-                                                        fontSize: "0.75rem",
-                                                    }}
-                                                >
-                                                    {PROJECT_STATE_LABELS[
-                                                        prerequisite.state
-                                                    ] || "Unknown"}
                                                 </span>
                                             </div>
                                             {prerequisite.topics &&
