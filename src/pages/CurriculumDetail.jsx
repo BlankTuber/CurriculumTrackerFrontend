@@ -22,8 +22,7 @@ import ProjectForm from "../components/ProjectForm";
 import ResourceForm from "../components/ResourceForm";
 import LevelForm from "../components/LevelForm";
 import StageForm from "../components/StageForm";
-import ProjectFilter from "../components/ProjectFilter";
-import ProjectHierarchyBrowser from "../components/ProjectHierarchyBrowser";
+import ProjectNavigator from "../components/ProjectNavigator";
 import ProjectStateToggle from "../components/ProjectStateToggle";
 import Notification from "../components/Notification";
 
@@ -65,6 +64,8 @@ const CurriculumDetail = () => {
 
     const [selectedLevel, setSelectedLevel] = useState(null);
     const [selectedStage, setSelectedStage] = useState(null);
+
+    const [navigationMode, setNavigationMode] = useState("browser");
 
     const [updatingStates, setUpdatingStates] = useState(new Set());
 
@@ -471,27 +472,26 @@ const CurriculumDetail = () => {
 
     const handleHierarchyLevelChange = (level) => {
         setSelectedLevel(level);
-        if (level) {
-            clearAllFilters();
-        }
+        setSelectedStage(null);
     };
 
     const handleHierarchyStageChange = (stage) => {
         setSelectedStage(stage);
     };
 
-    const clearAllFilters = () => {
-        setSearchQuery("");
-        setStageFilter("");
-        setLevelFilter("");
-        setTopicFilter("");
-        setGithubFilter("");
-        setStateFilter("");
-    };
-
-    const clearHierarchySelection = () => {
-        setSelectedLevel(null);
-        setSelectedStage(null);
+    const handleNavigationModeChange = (mode) => {
+        setNavigationMode(mode);
+        if (mode === "filter") {
+            setSelectedLevel(null);
+            setSelectedStage(null);
+        } else {
+            setSearchQuery("");
+            setStageFilter("");
+            setLevelFilter("");
+            setTopicFilter("");
+            setGithubFilter("");
+            setStateFilter("");
+        }
     };
 
     const isUsingFilters = () => {
@@ -516,95 +516,147 @@ const CurriculumDetail = () => {
 
         let filteredProjects = [...curriculum.projects];
 
-        if (isUsingFilters()) {
-            if (searchQuery) {
-                const query = searchQuery.toLowerCase();
-                filteredProjects = filteredProjects.filter((project) => {
-                    if (!project) return false;
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            filteredProjects = filteredProjects.filter((project) => {
+                if (!project) return false;
 
-                    const matchesName =
-                        project.name &&
-                        project.name.toLowerCase().includes(query);
-                    const matchesDescription =
-                        project.description &&
-                        project.description.toLowerCase().includes(query);
-                    const matchesIdentifier =
-                        project.identifier &&
-                        project.identifier.toLowerCase().includes(query);
-                    const matchesTopics =
-                        project.topics &&
-                        Array.isArray(project.topics) &&
-                        project.topics.some(
-                            (topic) =>
-                                topic && topic.toLowerCase().includes(query)
-                        );
-
-                    return (
-                        matchesName ||
-                        matchesDescription ||
-                        matchesIdentifier ||
-                        matchesTopics
+                const matchesName =
+                    project.name && project.name.toLowerCase().includes(query);
+                const matchesDescription =
+                    project.description &&
+                    project.description.toLowerCase().includes(query);
+                const matchesIdentifier =
+                    project.identifier &&
+                    project.identifier.toLowerCase().includes(query);
+                const matchesTopics =
+                    project.topics &&
+                    Array.isArray(project.topics) &&
+                    project.topics.some(
+                        (topic) => topic && topic.toLowerCase().includes(query)
                     );
-                });
-            }
 
-            if (stageFilter) {
-                filteredProjects = filterProjectsByStage(
-                    filteredProjects,
-                    stageFilter
+                return (
+                    matchesName ||
+                    matchesDescription ||
+                    matchesIdentifier ||
+                    matchesTopics
                 );
-            }
+            });
+        }
 
-            if (levelFilter) {
-                filteredProjects = filterProjectsByLevel(
-                    filteredProjects,
-                    curriculum.levels || [],
-                    levelFilter
-                );
-            }
+        if (stageFilter) {
+            filteredProjects = filterProjectsByStage(
+                filteredProjects,
+                stageFilter
+            );
+        }
 
-            if (topicFilter) {
+        if (levelFilter) {
+            filteredProjects = filterProjectsByLevel(
+                filteredProjects,
+                curriculum.levels || [],
+                levelFilter
+            );
+        }
+
+        if (topicFilter) {
+            filteredProjects = filteredProjects.filter(
+                (project) =>
+                    project &&
+                    project.topics &&
+                    Array.isArray(project.topics) &&
+                    project.topics.includes(topicFilter)
+            );
+        }
+
+        if (githubFilter) {
+            if (githubFilter === "with") {
                 filteredProjects = filteredProjects.filter(
                     (project) =>
                         project &&
-                        project.topics &&
-                        Array.isArray(project.topics) &&
-                        project.topics.includes(topicFilter)
+                        project.githubRepo &&
+                        project.githubRepo.trim()
                 );
-            }
-
-            if (githubFilter) {
-                if (githubFilter === "with") {
-                    filteredProjects = filteredProjects.filter(
-                        (project) =>
-                            project &&
-                            project.githubRepo &&
-                            project.githubRepo.trim()
-                    );
-                } else if (githubFilter === "without") {
-                    filteredProjects = filteredProjects.filter(
-                        (project) =>
-                            !project ||
-                            !project.githubRepo ||
-                            !project.githubRepo.trim()
-                    );
-                }
-            }
-
-            if (stateFilter) {
+            } else if (githubFilter === "without") {
                 filteredProjects = filteredProjects.filter(
-                    (p) => p && p.state === stateFilter
+                    (project) =>
+                        !project ||
+                        !project.githubRepo ||
+                        !project.githubRepo.trim()
                 );
             }
-        } else if (selectedLevel && selectedStage) {
+        }
+
+        if (stateFilter) {
             filteredProjects = filteredProjects.filter(
-                (project) => project && project.stage === selectedStage
+                (p) => p && p.state === stateFilter
             );
-        } else {
-            return [];
         }
 
         return sortProjectsByStageAndOrder(filteredProjects);
+    };
+
+    const getHierarchyProjects = () => {
+        if (
+            !curriculum ||
+            !curriculum.projects ||
+            !Array.isArray(curriculum.projects) ||
+            !selectedLevel ||
+            !selectedStage
+        ) {
+            return [];
+        }
+
+        const filteredProjects = curriculum.projects.filter(
+            (project) => project && project.stage === selectedStage
+        );
+
+        return sortProjectsByStageAndOrder(filteredProjects);
+    };
+
+    const getCurrentProjects = () => {
+        if (navigationMode === "filter" && isUsingFilters()) {
+            return getFilteredProjects();
+        } else if (
+            navigationMode === "browser" &&
+            selectedLevel &&
+            selectedStage
+        ) {
+            return getHierarchyProjects();
+        }
+        return [];
+    };
+
+    const getProjectsTitle = () => {
+        if (navigationMode === "filter" && isUsingFilters()) {
+            const count = getFilteredProjects().length;
+            const total = curriculum?.projects?.length || 0;
+            return `Filtered Projects (${count}${
+                total > 0 ? `/${total}` : ""
+            })`;
+        } else if (
+            navigationMode === "browser" &&
+            selectedLevel &&
+            selectedStage
+        ) {
+            const count = getHierarchyProjects().length;
+            return `Projects in ${selectedLevel.name} - Stage ${selectedStage} (${count})`;
+        }
+        return "Projects";
+    };
+
+    const getProjectsSubtitle = () => {
+        if (navigationMode === "filter" && isUsingFilters()) {
+            return "Results based on your search and filter criteria";
+        } else if (
+            navigationMode === "browser" &&
+            selectedLevel &&
+            selectedStage
+        ) {
+            return `Showing all projects for the selected level and stage`;
+        }
+        return "Use the search filters or browse hierarchy to find projects";
     };
 
     const renderProjectCard = (project) => {
@@ -658,18 +710,18 @@ const CurriculumDetail = () => {
                                 [{project.identifier}]
                             </span>
                         )}
-                        {!selectedStage && (
+                        {navigationMode === "filter" && (
                             <span className="text-muted text-xs">
                                 Stage {project.stage || "N/A"}
                                 {project.order && ` #${project.order}`}
                             </span>
                         )}
-                        {selectedStage && project.order && (
+                        {navigationMode === "browser" && project.order && (
                             <span className="text-muted text-xs">
                                 #{project.order}
                             </span>
                         )}
-                        {projectLevel && !selectedLevel && (
+                        {projectLevel && navigationMode === "filter" && (
                             <span className="text-primary text-xs">
                                 {projectLevel.name || "Unnamed Level"}
                             </span>
@@ -770,9 +822,7 @@ const CurriculumDetail = () => {
                   (a, b) => (a.stageNumber || 0) - (b.stageNumber || 0)
               )
             : [];
-    const sortedProjects = getFilteredProjects();
-    const hasActiveFilters = isUsingFilters();
-    const hasHierarchySelection = selectedLevel && selectedStage;
+    const currentProjects = getCurrentProjects();
 
     if (loading) {
         return <LoadingSpinner message="Loading curriculum..." />;
@@ -858,9 +908,10 @@ const CurriculumDetail = () => {
             </div>
 
             <div className="grid grid-2">
-                <ProjectFilter
+                <ProjectNavigator
                     projects={curriculum.projects || []}
                     levels={curriculum.levels || []}
+                    stages={curriculum.stages || []}
                     searchQuery={searchQuery}
                     stageFilter={stageFilter}
                     levelFilter={levelFilter}
@@ -873,58 +924,52 @@ const CurriculumDetail = () => {
                     onTopicChange={setTopicFilter}
                     onGithubChange={setGithubFilter}
                     onStateChange={setStateFilter}
-                    showStateFilter={true}
+                    selectedLevel={selectedLevel}
+                    selectedStage={selectedStage}
+                    onHierarchyLevelChange={handleHierarchyLevelChange}
+                    onHierarchyStageChange={handleHierarchyStageChange}
+                    onAddProject={() => setShowProjectModal(true)}
+                    onModeChange={handleNavigationModeChange}
                 />
 
-                {!hasActiveFilters && (
-                    <ProjectHierarchyBrowser
-                        levels={curriculum.levels || []}
-                        projects={curriculum.projects || []}
-                        stages={curriculum.stages || []}
-                        selectedLevel={selectedLevel}
-                        selectedStage={selectedStage}
-                        onLevelChange={handleHierarchyLevelChange}
-                        onStageChange={handleHierarchyStageChange}
-                        onAddProject={() => setShowProjectModal(true)}
-                    />
-                )}
-
-                {hasActiveFilters && (
-                    <div className="card">
-                        <div className="card-header">
-                            <div className="flex-between">
+                <div className="card">
+                    <div className="card-header">
+                        <div className="flex-between">
+                            <div>
                                 <h2 className="card-title">
-                                    Filtered Projects ({sortedProjects.length}
-                                    {curriculum.projects &&
-                                        Array.isArray(curriculum.projects) && (
-                                            <span className="text-muted">
-                                                /{curriculum.projects.length}
-                                            </span>
-                                        )}
-                                    )
+                                    {getProjectsTitle()}
                                 </h2>
-                                <button
-                                    onClick={() => setShowProjectModal(true)}
-                                    className="btn btn-primary btn-small"
-                                >
-                                    Add Project
-                                </button>
+                                <p className="card-subtitle">
+                                    {getProjectsSubtitle()}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowProjectModal(true)}
+                                className="btn btn-primary btn-small"
+                            >
+                                Add Project
+                            </button>
+                        </div>
+                    </div>
+
+                    {currentProjects.length > 0 ? (
+                        <div className="scrollable-list-extended">
+                            <div className="compact-list">
+                                {currentProjects.map(renderProjectCard)}
                             </div>
                         </div>
-
-                        {sortedProjects.length > 0 ? (
-                            <div className="scrollable-list">
-                                <div className="compact-list">
-                                    {sortedProjects.map(renderProjectCard)}
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="text-muted text-center text-sm">
-                                No projects match the current filters
-                            </p>
-                        )}
-                    </div>
-                )}
+                    ) : (
+                        <p className="text-muted text-center text-sm">
+                            {navigationMode === "filter" && isUsingFilters()
+                                ? "No projects match the current filters"
+                                : navigationMode === "browser" &&
+                                  selectedLevel &&
+                                  selectedStage
+                                ? `No projects found in ${selectedLevel.name}, Stage ${selectedStage}`
+                                : "Use the navigation panel to search for projects or browse by hierarchy"}
+                        </p>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-2">
@@ -1253,40 +1298,6 @@ const CurriculumDetail = () => {
                     </p>
                 )}
             </div>
-
-            {hasHierarchySelection && (
-                <div className="card">
-                    <div className="card-header">
-                        <div className="flex-between">
-                            <h2 className="card-title">
-                                Projects in{" "}
-                                {selectedLevel.name || "Selected Level"} - Stage{" "}
-                                {selectedStage} ({sortedProjects.length})
-                            </h2>
-                            <button
-                                onClick={clearHierarchySelection}
-                                className="btn btn-secondary btn-small"
-                            >
-                                Clear Selection
-                            </button>
-                        </div>
-                    </div>
-
-                    {sortedProjects.length > 0 ? (
-                        <div className="scrollable-list scrollable-list-extended">
-                            <div className="compact-list">
-                                {sortedProjects.map(renderProjectCard)}
-                            </div>
-                        </div>
-                    ) : (
-                        <p className="text-muted text-center text-sm">
-                            No projects found in{" "}
-                            {selectedLevel.name || "Selected Level"}, Stage{" "}
-                            {selectedStage}
-                        </p>
-                    )}
-                </div>
-            )}
 
             <Modal
                 isOpen={showEditModal}

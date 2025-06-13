@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React from "react";
 import { sortLevelsByOrder } from "../utils/stageUtils";
 
 const ProjectHierarchyBrowser = ({
@@ -10,6 +10,7 @@ const ProjectHierarchyBrowser = ({
     onLevelChange,
     onStageChange,
     onAddProject,
+    hideTitle = false,
 }) => {
     const sortedLevels = sortLevelsByOrder(levels);
 
@@ -31,10 +32,9 @@ const ProjectHierarchyBrowser = ({
         return projects.filter((p) => p.stage === stage);
     };
 
-    const availableStages = useMemo(() => {
-        if (!selectedLevel) return [];
-        return getStagesForLevel(selectedLevel);
-    }, [selectedLevel]);
+    const availableStages = selectedLevel
+        ? getStagesForLevel(selectedLevel)
+        : [];
 
     const handleLevelClick = (level) => {
         onLevelChange(level);
@@ -64,43 +64,43 @@ const ProjectHierarchyBrowser = ({
         };
     };
 
-    return (
-        <div className="card">
-            <div className="card-header">
-                <div className="flex-between">
-                    <div>
-                        <h3 className="card-title">Browse Projects</h3>
-                        <p className="card-subtitle">
-                            {!selectedLevel && "Select a level to begin"}
-                            {selectedLevel &&
-                                !selectedStage &&
-                                `Select a stage in ${selectedLevel.name}`}
-                            {selectedLevel &&
-                                selectedStage &&
-                                `${selectedLevel.name} - Stage ${selectedStage}`}
-                        </p>
-                    </div>
-                    <div className="btn-group">
-                        {onAddProject && (
-                            <button
-                                onClick={onAddProject}
-                                className="btn btn-primary btn-small"
-                            >
-                                Add Project
-                            </button>
-                        )}
-                        {(selectedLevel || selectedStage) && (
-                            <button
-                                onClick={handleBack}
-                                className="btn btn-secondary btn-small"
-                            >
-                                ← Back
-                            </button>
-                        )}
-                    </div>
-                </div>
+    const headerContent = (
+        <div className="flex-between">
+            <div>
+                <h3 className="card-title">Browse Projects</h3>
+                <p className="card-subtitle">
+                    {!selectedLevel && "Select a level to begin"}
+                    {selectedLevel &&
+                        !selectedStage &&
+                        `Select a stage in ${selectedLevel.name}`}
+                    {selectedLevel &&
+                        selectedStage &&
+                        `${selectedLevel.name} - Stage ${selectedStage}`}
+                </p>
             </div>
+            <div className="btn-group">
+                {onAddProject && (
+                    <button
+                        onClick={onAddProject}
+                        className="btn btn-primary btn-small"
+                    >
+                        Add Project
+                    </button>
+                )}
+                {(selectedLevel || selectedStage) && (
+                    <button
+                        onClick={handleBack}
+                        className="btn btn-secondary btn-small"
+                    >
+                        ← Back
+                    </button>
+                )}
+            </div>
+        </div>
+    );
 
+    const content = (
+        <>
             {!selectedLevel && (
                 <div>
                     {sortedLevels.length === 0 ? (
@@ -367,7 +367,7 @@ const ProjectHierarchyBrowser = ({
                 <div style={{ textAlign: "center", padding: "1rem" }}>
                     <p className="text-muted text-sm">
                         Projects for {selectedLevel.name}, Stage {selectedStage}{" "}
-                        will appear below.
+                        will appear in the projects panel.
                     </p>
                     {(() => {
                         const stageDefinition =
@@ -420,6 +420,22 @@ const ProjectHierarchyBrowser = ({
                     })()}
                 </div>
             )}
+        </>
+    );
+
+    if (hideTitle) {
+        return (
+            <div>
+                <div style={{ marginBottom: "1rem" }}>{headerContent}</div>
+                {content}
+            </div>
+        );
+    }
+
+    return (
+        <div className="card">
+            <div className="card-header">{headerContent}</div>
+            {content}
         </div>
     );
 };

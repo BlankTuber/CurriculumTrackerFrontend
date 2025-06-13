@@ -18,6 +18,7 @@ const ProjectFilter = ({
     showStateFilter = false,
     stateFilter,
     onStateChange,
+    hideTitle = false,
 }) => {
     const uniqueStages = getUniqueStages(projects);
     const sortedLevels = sortLevelsByOrder(levels);
@@ -64,12 +65,8 @@ const ProjectFilter = ({
         githubFilter ||
         stateFilter;
 
-    return (
-        <div className="card">
-            <div className="card-header">
-                <h3 className="card-title">Search & Filters</h3>
-            </div>
-
+    const content = (
+        <>
             <div className="form-group">
                 <label className="form-label">Search Projects</label>
                 <input
@@ -217,6 +214,19 @@ const ProjectFilter = ({
                     </button>
                 </div>
             )}
+        </>
+    );
+
+    if (hideTitle) {
+        return content;
+    }
+
+    return (
+        <div className="card">
+            <div className="card-header">
+                <h3 className="card-title">Search & Filters</h3>
+            </div>
+            {content}
         </div>
     );
 };
