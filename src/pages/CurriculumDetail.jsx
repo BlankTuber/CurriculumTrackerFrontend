@@ -662,14 +662,6 @@ const CurriculumDetail = () => {
     const renderProjectCard = (project) => {
         if (!project || !project._id) return null;
 
-        const projectLevel = getLevelForStage(
-            curriculum.levels || [],
-            project.stage
-        );
-        const githubUrl = constructGithubUrl(
-            user && user.githubUsername,
-            project.githubRepo
-        );
         const isUpdating = updatingStates.has(project._id);
 
         return (
@@ -721,61 +713,7 @@ const CurriculumDetail = () => {
                                 #{project.order}
                             </span>
                         )}
-                        {projectLevel && navigationMode === "filter" && (
-                            <span className="text-primary text-xs">
-                                {projectLevel.name || "Unnamed Level"}
-                            </span>
-                        )}
-                        {githubUrl && (
-                            <a
-                                href={githubUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary text-xs"
-                            >
-                                GitHub
-                            </a>
-                        )}
                     </div>
-                    {project.topics &&
-                        Array.isArray(project.topics) &&
-                        project.topics.length > 0 && (
-                            <div
-                                className="flex"
-                                style={{
-                                    gap: "0.25rem",
-                                    flexWrap: "wrap",
-                                }}
-                            >
-                                {project.topics
-                                    .slice(0, 4)
-                                    .map((topic, index) => (
-                                        <span
-                                            key={index}
-                                            style={{
-                                                background: "var(--bg-primary)",
-                                                padding: "0.125rem 0.25rem",
-                                                borderRadius: "3px",
-                                                fontSize: "0.65rem",
-                                                color: "var(--text-secondary)",
-                                            }}
-                                        >
-                                            {topic}
-                                        </span>
-                                    ))}
-                                {project.topics.length > 4 && (
-                                    <span
-                                        className="text-muted"
-                                        style={{
-                                            fontSize: "0.65rem",
-                                            fontStyle: "italic",
-                                        }}
-                                    >
-                                        +{project.topics.length - 4} more
-                                    </span>
-                                )}
-                            </div>
-                        )}
                 </div>
                 <div className="btn-group">
                     <ProjectStateToggle

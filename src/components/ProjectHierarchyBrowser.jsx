@@ -79,14 +79,6 @@ const ProjectHierarchyBrowser = ({
                 </p>
             </div>
             <div className="btn-group">
-                {onAddProject && (
-                    <button
-                        onClick={onAddProject}
-                        className="btn btn-primary btn-small"
-                    >
-                        Add Project
-                    </button>
-                )}
                 {(selectedLevel || selectedStage) && (
                     <button
                         onClick={handleBack}
@@ -289,17 +281,6 @@ const ProjectHierarchyBrowser = ({
                                         >
                                             Stage {stage}
                                         </h5>
-                                        {stageDefinition?.name && (
-                                            <p
-                                                className="text-primary text-xs"
-                                                style={{
-                                                    margin: 0,
-                                                    fontWeight: "500",
-                                                }}
-                                            >
-                                                {stageDefinition.name}
-                                            </p>
-                                        )}
                                     </div>
 
                                     <div style={{ marginBottom: "0.25rem" }}>
@@ -341,19 +322,6 @@ const ProjectHierarchyBrowser = ({
                                             }}
                                         >
                                             {stageDefinition.description}
-                                        </p>
-                                    )}
-
-                                    {stageDefinition?.defaultGithubRepo && (
-                                        <p
-                                            className="text-info text-xs"
-                                            style={{
-                                                margin: "0.25rem 0 0 0",
-                                                fontFamily: "monospace",
-                                                fontSize: "0.65rem",
-                                            }}
-                                        >
-                                            {stageDefinition.defaultGithubRepo}
                                         </p>
                                     )}
                                 </div>
@@ -399,18 +367,6 @@ const ProjectHierarchyBrowser = ({
                                             style={{ margin: "0 0 0.25rem 0" }}
                                         >
                                             {stageDefinition.description}
-                                        </p>
-                                    )}
-                                    {stageDefinition.defaultGithubRepo && (
-                                        <p
-                                            className="text-info text-xs"
-                                            style={{
-                                                margin: 0,
-                                                fontFamily: "monospace",
-                                            }}
-                                        >
-                                            Default repo:{" "}
-                                            {stageDefinition.defaultGithubRepo}
                                         </p>
                                     )}
                                 </div>

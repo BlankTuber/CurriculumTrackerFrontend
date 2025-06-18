@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { projectAPI, noteAPI } from "../utils/api";
+import { projectAPI, noteAPI, curriculumAPI } from "../utils/api";
 import {
     PROJECT_STATES,
     constructGithubUrl,
     safeFormatDate,
 } from "../utils/projectUtils";
+import {
+    sortProjectsByStageAndOrder,
+    getProjectStats,
+} from "../utils/stageUtils";
 import { useAuth } from "../contexts/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
@@ -23,6 +27,7 @@ const ProjectDetail = () => {
 
     const [project, setProject] = useState(null);
     const [originalCurriculum, setOriginalCurriculum] = useState(null);
+    const [nextProject, setNextProject] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [stateUpdateLoading, setStateUpdateLoading] = useState(false);
@@ -51,6 +56,12 @@ const ProjectDetail = () => {
         }
     }, [id]);
 
+    useEffect(() => {
+        if (project && originalCurriculum) {
+            findNextProject();
+        }
+    }, [project, originalCurriculum]);
+
     const showNotification = (type, title, message) => {
         setNotification({
             isOpen: true,
@@ -78,11 +89,52 @@ const ProjectDetail = () => {
 
             setProject(data.project);
             setOriginalCurriculum(data.project.curriculum || null);
+
+            if (data.project.curriculum && data.project.curriculum._id) {
+                await fetchCurriculumForNextProject(
+                    data.project.curriculum._id
+                );
+            }
         } catch (error) {
             setError(error.message || "Failed to load project");
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchCurriculumForNextProject = async (curriculumId) => {
+        try {
+            const curriculumData = await curriculumAPI.getById(curriculumId);
+            if (curriculumData && curriculumData.curriculum) {
+                setOriginalCurriculum(curriculumData.curriculum);
+            }
+        } catch (error) {
+            console.error(
+                "Failed to fetch curriculum for next project:",
+                error
+            );
+        }
+    };
+
+    const findNextProject = () => {
+        if (!project || !originalCurriculum || !originalCurriculum.projects) {
+            setNextProject(null);
+            return;
+        }
+
+        const allProjects = originalCurriculum.projects;
+        const sortedProjects = sortProjectsByStageAndOrder(allProjects);
+        const currentIndex = sortedProjects.findIndex(
+            (p) => p._id === project._id
+        );
+
+        if (currentIndex === -1 || currentIndex === sortedProjects.length - 1) {
+            setNextProject(null);
+            return;
+        }
+
+        const nextProjectCandidate = sortedProjects[currentIndex + 1];
+        setNextProject(nextProjectCandidate || null);
     };
 
     const handleUpdateProjectState = async (newState) => {
@@ -380,13 +432,31 @@ const ProjectDetail = () => {
         <div>
             <div className="flex-between mb-1">
                 <div>
-                    <Link
-                        to={`/curriculum/${curriculumId}`}
-                        className="text-muted text-sm"
-                        style={{ textDecoration: "none" }}
+                    <div
+                        className="flex"
+                        style={{
+                            gap: "0.5rem",
+                            alignItems: "center",
+                            marginBottom: "0.25rem",
+                        }}
                     >
-                        ← Back to {curriculumName || "Curriculum"}
-                    </Link>
+                        <Link
+                            to={`/curriculum/${curriculumId}`}
+                            className="text-muted text-sm"
+                            style={{ textDecoration: "none" }}
+                        >
+                            ← Back to {curriculumName || "Curriculum"}
+                        </Link>
+                        {nextProject && (
+                            <Link
+                                to={`/project/${nextProject._id}`}
+                                className="btn btn-secondary btn-small"
+                                style={{ marginLeft: "auto" }}
+                            >
+                                Next Project →
+                            </Link>
+                        )}
+                    </div>
                     <div
                         className="flex"
                         style={{
